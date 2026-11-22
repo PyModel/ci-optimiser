@@ -60,6 +60,12 @@ Keep queue/main concurrency groups unique; cancel superseded PR runs only. Missi
 queue access or unsupported provider semantics is a reported blocker, not permission
 to admit untested main. Preserve checks while preparing activation.
 
+Use [native admission evidence](01-discovery-matrix.md#merge-admission-evidence)
+to distinguish the enforcing SCM from the executor and check publisher. Bind the
+effective rule, bypass permissions, reported status and actual job revisions to
+the same candidate and decision. Changes to the base, queued predecessors, policy
+or build inputs, or a superseded or ambiguous attempt, invalidate older green evidence.
+
 The evaluator still reads historical `rolling` and `all_pr` policy records for
 compatibility and diagnosis. Those modes do not satisfy this skill's strict contract.
 Their output is not proof that a queue rule exists or that it controlled admission.

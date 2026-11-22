@@ -72,6 +72,52 @@ class SkillDocsTest(unittest.TestCase):
         if repository is not None:
             self.assertEqual(broken_links(repository), [])
 
+    def test_audit_report_distinguishes_admission_execution_and_release(self):
+        report = (ROOT / "templates/audit-report.md").read_text()
+        sections = dict(
+            re.findall(r"^## ([^\n]+)\n(.*?)(?=^## |\Z)", report, re.M | re.S)
+        )
+        self.assertIn("Merge admission and evidence", sections)
+        admission = sections["Merge admission and evidence"]
+        rows = dict(re.findall(r"^\| ([^|]+?) \| ([^|]+?) \|$", admission, re.M))
+        for field, markers in {
+            "Enforcing SCM / rule": ("target branch", "required queue/train", "policy source"),
+            "Executor / workflow / event": ("executor", "workflow", "event"),
+            "Expected producer / check": ("trusted publisher", "check context"),
+            "Actual producer / check": ("observed publisher", "check context", "reported SHA"),
+            "Combined candidate / base / attempt": ("candidate SHA", "base SHA", "run ID", "attempt"),
+            "Full-suite inventory / result": ("expected", "observed", "tests", "shards", "reports"),
+            "Strict admission / bypass decision": ("eligible", "blocked", "unverified", "bypass"),
+        }.items():
+            with self.subTest(field=field):
+                self.assertIn(field, rows)
+                for marker in markers:
+                    self.assertIn(marker, rows[field])
+        proof = " ".join(admission.split())
+        self.assertIn(
+            "reported SHA and the actual SHA executed by every required job "
+            "must both match the combined candidate SHA", proof,
+        )
+        for rejected in ("stale", "wrong producer", "skipped", "neutral", "pr-head", "missing proof"):
+            self.assertIn(rejected, proof.casefold())
+        guidance = (ROOT / "references/01-discovery-matrix.md").read_text()
+        self.assertIn("06-official-sources.md#merge-admission-sources-2026-11-22", guidance)
+        sources = (ROOT / "references/06-official-sources.md").read_text()
+        dated_sources = sources.split("## Merge admission sources (2026-11-22)\n", 1)[1].split("\n## ", 1)[0]
+        for url in (
+            "configuring-pull-request-merges/managing-a-merge-queue",
+            "troubleshooting-required-status-checks",
+            "buildkite.com/docs/pipelines/source-control/github#running-builds-on-merge-queues",
+            "docs.gitlab.com/ci/pipelines/merge_trains#enforce-merge-trains",
+            "learn.microsoft.com/en-us/azure/devops/repos/git/branch-policies",
+        ):
+            with self.subTest(source=url):
+                self.assertIn(url, dated_sources)
+        release = sections["Evidence identity and release eligibility"]
+        self.assertIn("actual release host", release)
+        self.assertIn("../references/17-release-automation.md", release)
+        self.assertIn("KEEP / ADOPT / FIX / NOT APPLICABLE", release)
+
     def test_bundle_entrypoint_license_and_source_scaffolding(self):
         self.assertEqual(list(ROOT.rglob("SKILL.md")), [ROOT / "SKILL.md"])
         self.assertTrue((ROOT / "LICENSE").is_file())

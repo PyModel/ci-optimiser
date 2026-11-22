@@ -17,6 +17,31 @@ Mode: OBSERVE · Window: <from> → <to> · Sample: <n> runs (<m> with jobs) or 
 | Required checks | | current snapshot's `raw/required_checks.json`; source completeness/app identity |
 | Trust boundaries | fork PRs? `pull_request_target`? deploy jobs? | |
 
+## Merge admission and evidence
+
+Use [native provider guidance](../references/01-discovery-matrix.md#merge-admission-evidence).
+Link evidence for the same target repository, candidate, event, workflow, producer
+and attempt; current settings alone do not prove historical enforcement.
+
+| Field | Evidence to record |
+|---|---|
+| Enforcing SCM / rule | <SCM host, repository and target branch, effective required queue/train and full aggregate on every candidate, authenticated policy source and as-of time> |
+| Executor / workflow / event | <CI executor, workflow or pipeline, native event and ref> |
+| Expected producer / check | <trusted publisher identity and required check context from the effective rule> |
+| Actual producer / check | <observed publisher identity, check context, conclusion, reported SHA and evidence link> |
+| Combined candidate / base / attempt | <candidate SHA, current base SHA, queued predecessors, run ID, attempt, completion and observation times> |
+| Full-suite inventory / result | <independently expected vs observed commands, jobs, tests, shards, reports and coverage; trusted checkout evidence per required job; exact results and policy/build-input fingerprints> |
+| Strict admission / bypass decision | <eligible / blocked / unverified; effective bypass or alternate path; rule and check-source evidence at the decision; blocker or next authorized read-only proof> |
+
+The reported SHA and the actual SHA executed by every required job must both match
+the combined candidate SHA. Correct status attachment cannot excuse a wrong checkout.
+Require fresh full execution, a passing required aggregate and no effective bypass.
+Skipped, neutral, failed, cancelled or timed-out required work never passes, even
+if the native aggregate is green. A stale result, wrong producer or PR-head status
+is not candidate proof. Mark known violations **blocked** and denied or missing proof
+**unverified**; neither is eligible. Preserve the first failure even if a later run
+is green.
+
 ## Four validation categories
 
 Use the [validation architecture](../references/08-validation-architecture.md). Classify each command by inspected behavior, not its name; a command may cover more than one category.
@@ -28,7 +53,7 @@ Use the [validation architecture](../references/08-validation-architecture.md). 
 | 3. Integrated main | full required suite | combined queue candidate | full suite before main admission | |
 | 4. Release readiness | artifact, compatibility and rollout checks | immutable artifact digest | release / promotion | |
 
-Main policy: full suite in the required merge queue/train before main. Provider rule and workflow evidence: <links / activation blocked>. Post-push/nightly runs are supplemental.
+Main policy: full suite in the required merge queue/train before main. See [merge admission and evidence](#merge-admission-and-evidence) for the decision and blockers. Post-push/nightly runs are supplemental.
 
 Queue controls: <full inventory, no test-result cache replay, unique concurrency group, all entries pass>. PR-only selection fallback: <FULL>. Every obligation remains before main; list any activation blocker.
 
@@ -92,10 +117,12 @@ Recompute total runner minutes separately; don't double-count shared work.
 
 ## Evidence identity and release eligibility
 
-When relevant, use the [release automation review](../references/17-release-automation.md):
-record KEEP / ADOPT / FIX / NOT APPLICABLE, observed release state, recommended
-workflow, dated sources, exact approval boundaries, evidence gaps, verification,
-rollback, and one next action.
+For explicit release questions or relevant versioned release evidence, use the
+[release automation review](../references/17-release-automation.md). Name the actual release host
+and project separately from the enforcing SCM and CI executor; a mirror is not host
+evidence. Record KEEP / ADOPT / FIX / NOT APPLICABLE, observed release state,
+recommended workflow, dated sources, exact approval boundaries, evidence gaps,
+verification, rollback, and one next action.
 
 - Source identities: <PR/base/candidate/final-main SHAs and verified mapping; rerun if equivalence is unproven>.
 - Workload and policy fingerprint: <commands/test IDs/coverage/graph/workflow/toolchain/build inputs; no secrets>.

@@ -15,6 +15,20 @@ future compatibility. Re-open sources before quoting a current version or price.
 | Azure Pipelines | Trigger, stage, job, pool and template schema | https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/?view=azure-pipelines |
 | Jenkins | Jenkinsfile syntax, agents, triggers and parallel stages | https://www.jenkins.io/doc/book/pipeline/syntax/ |
 
+## Merge admission sources (2026-11-22)
+
+| Topic | Fact relied on | Primary source |
+|---|---|---|
+| GitHub merge groups and required checks | Actions needs `merge_group`; external CI needs the queue event/ref. Verify the expected check source; native success can include skipped or neutral states. | [Merge queue](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue) · [Required checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks) |
+| Buildkite external queue execution | Native GitHub queue support uses the merge-groups webhook and `head_sha`; ordinary queue-ref pushes do not establish that native execution. | [GitHub integration](https://buildkite.com/docs/pipelines/source-control/github#running-builds-on-merge-queues) |
+| GitLab train availability and enforcement | Train prerequisites and enforcement are separate; external MR status checks refer to source HEAD. | [Merge trains](https://docs.gitlab.com/ci/pipelines/merge_trains/) · [Enforcement](https://docs.gitlab.com/ci/pipelines/merge_trains#enforce-merge-trains) · [External status checks](https://docs.gitlab.com/user/project/merge_requests/status_checks/) |
+| Azure Repos admission policies | Required build validation or external status can gate PR completion; these documented policies do not establish a speculative queue. | [Branch policies](https://learn.microsoft.com/en-us/azure/devops/repos/git/branch-policies?view=azure-devops) · [Status policy](https://learn.microsoft.com/en-us/azure/devops/repos/git/pr-status-policy?view=azure-devops) |
+
+Not confirmed for an arbitrary target: installed feature support, effective
+queue enforcement, check publisher identity, or ability to bypass the rule.
+
+## Tool and workflow sources
+
 Use the sources below for relevant GitHub and stack details.
 
 | Topic | Fact relied on | URL |
