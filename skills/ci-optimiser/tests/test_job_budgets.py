@@ -510,6 +510,55 @@ class JobBudgetTest(unittest.TestCase):
         self.assertEqual(json.dumps(data, sort_keys=True), original)
         self.assert_failure(payload(data), rule, current_job="ci", expected_run_id=99, expected_head_sha="a" * 40)
 
+    def test_live_receipt_accepts_successful_dependency_with_lagging_status(self):
+        data, rule = live_aggregate()
+        upstream = job("workflow-lint")
+        rule["jobs"][upstream["name"]] = policy(upstream["name"])["jobs"][upstream["name"]]
+        upstream["status"] = "in_progress"
+        receipt = payload(upstream, data)
+        identity = {"current_job": "ci", "expected_run_id": 99, "expected_head_sha": "a" * 40}
+
+        def verify():
+            return budgets.verify(receipt, rule, current_job_setup=local_setup(), now=stamp(40), **identity)
+
+        result = verify()
+        self.assertEqual(result["status"], "pass_with_pending", result)
+        self.assertEqual(result["jobs"][0]["measurements"], {
+            "waiting_s": 2, "setup_s": 4, "running_s": 6, "runner_s": 18})
+        self.assertEqual(upstream["status"], "in_progress")
+        self.assert_failure(receipt, rule, **identity)
+        rule["jobs"][upstream["name"]]["running_s"] = 6
+        self.assertIn("running_s meets or exceeds", verify()["jobs"][0]["errors"][0])
+        rule["jobs"][upstream["name"]]["running_s"] = 60
+        for change in ({"conclusion": None}, {"conclusion": "failure"}, {"completed_at": None},
+                       {"completed_at": stamp(1)}, {"status": "queued"},
+                       {"steps": upstream["steps"][:-3]},
+                       {"steps": [{**s, "conclusion": "failure"} for s in upstream["steps"]]}):
+            with self.subTest(change=change):
+                receipt["jobs"][0] = {**upstream, **change}
+                self.assertEqual(verify()["status"], "fail")
+
+    def test_local_boundary_conservatively_bounds_a_queued_current_job(self):
+        data, rule = live_aggregate()
+        data.update(status="queued", started_at=None, steps=[])
+        result = self.local_verify(data, rule)
+        self.assertEqual(result["status"], "pass_with_pending", result)
+        self.assertEqual(result["jobs"][0]["measurements"], {
+            "waiting_s": 6, "setup_s": 6, "running_s": "pending", "runner_s": "pending"})
+        self.assert_failure(payload(data), rule, current_job="ci")
+        for metric in ("waiting_s", "setup_s"):
+            with self.subTest(metric=metric):
+                changed = copy.deepcopy(rule)
+                changed["jobs"]["ci"][metric] = 6
+                self.assertEqual(self.local_verify(data, changed)["status"], "fail")
+        for change in ({"conclusion": "failure"}, {"completed_at": stamp(5)}, {"status": "completed"},
+                       {"created_at": None}, {"created_at": stamp(7)}, {"started_at": stamp(7)},
+                       {"steps": [step(1, "Checkout repository", 2, 3)]}):
+            with self.subTest(change=change):
+                self.assertEqual(self.local_verify({**data, **change}, rule)["status"], "fail")
+        wrong_boundary = {**local_setup(), "first_work_step": "Read job timing evidence"}
+        self.assertEqual(self.local_verify(data, rule, wrong_boundary)["status"], "fail")
+
     def test_local_boundary_keeps_strict_waiting_and_setup_limits(self):
         for metric, value in (("waiting_s", 2), ("setup_s", 4)):
             with self.subTest(metric=metric):
