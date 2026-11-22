@@ -169,6 +169,38 @@ class SkillDocsTest(unittest.TestCase):
             self.assertTrue(os.access(repository / ".githooks/pre-push", os.X_OK))
             self.assertEqual((ROOT / "LICENSE").read_bytes(), (repository / "LICENSE").read_bytes())
 
+    def test_installed_strict_profile_sets_exclusive_targets(self):
+        guide = "14-two-minute-ci.md"
+        profile = (ROOT / "references" / guide).read_text()
+        acceptance = profile.split("## Acceptance and audit\n", 1)[1].split("\n## ", 1)[0]
+        targets = dict(re.findall(r"^\| ([^|]+?) \| `([^`]+)` \|$", acceptance, re.M))
+        self.assertEqual(targets, {
+            "First-execution PR feedback": "p50 <60 s / p95 <120 s",
+            "Per-job runner wait": "<5 s",
+            "Per-job setup": "<15 s",
+            "Slowest required job, elapsed on runner": "<35 s",
+            "Lint work": "<1 s",
+            "Format work": "<1 s",
+            "Typecheck work": "<5 s",
+            "Test work per shard": "<30 s",
+            "Exact eligible PR dependency-cache hits": ">95%",
+            "Local pre-push wall time": "<9 s",
+        })
+        self.assertIn("fail at equality", acceptance)
+        self.assertIn(targets["First-execution PR feedback"], (ROOT / "SKILL.md").read_text())
+        pruning = profile.split("## Two-week pruning review\n", 1)[1].split("\n## ", 1)[0]
+        self.assertRegex(" ".join(pruning.split()), r"Do not prune [^.]*\bauthorization\b[^.]* tests\b")
+        for path, prefix in (
+            ("SKILL.md", "references/"),
+            ("templates/agent-prompt.md", "../references/"),
+            ("templates/audit-report.md", "../references/"),
+            ("templates/optimization-pr.md", "../references/"),
+        ):
+            with self.subTest(path=path):
+                text = (ROOT / path).read_text()
+                self.assertIn(f"]({prefix}{guide}#acceptance-and-audit)", text)
+                self.assertNotRegex(text, r"<180 (?:s|seconds)\b")
+
     def test_checker_can_fail(self):
         import tempfile
         with tempfile.TemporaryDirectory() as d:

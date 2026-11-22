@@ -13,12 +13,13 @@ description: >-
 
 ## Mission and rules
 
-Make CI as fast as possible without letting it lie. Target **PR feedback p50 <120 seconds and p95 <180 seconds**, including dispatch, waiting, setup, execution and final required-check reporting. Keep observed timings separate from targets and runner billing.
+Target **first-execution PR feedback: p50 <60 s / p95 <120 s**, from exact revision receipt through the authoritative result. Keep targets, measured timings and runner billing separate.
 
-Two rules outrank speed:
+Three rules outrank speed:
 
 1. **Run the full required suite before anything reaches main, on the combined candidate in a merge queue.** Enumerate the baseline suite, new tests, platform/database variants, build/type/coverage and migration obligations; existing branch-protection entries alone do not define completeness. Selection may narrow PR feedback only. Execute tests afresh on the queue; bypass test-result caches, retain dependency caches. Post-push or scheduled tests cannot substitute for this gate. If the provider cannot enforce it, report the blocker and do not merge.
 2. **Never hide a failure.** No check/test/download retries, broader timeouts, dropped tests, flaky-test quarantine, weakened assertions, ignored exit codes or changed coverage thresholds to obtain green. Diagnose the first failure, fix its cause and validate a new revision. Keep failed attempts visible. Repeat planned benchmark trials and shuffled-order experiments without replacing failed results.
+3. **Preserve or grow the rule set and required checks.** Keep every required detection and its enforcement boundary. A faster tool or consolidated job may replace the old implementation only when parity is proven or specific required fallbacks stay.
 
 ## Scope and autonomy
 
@@ -45,7 +46,7 @@ Reuse applicable authorization; request separate approval for remote dispatches,
 
 ## Budgets and defaults
 
-Use the [strict performance contract](references/14-two-minute-ci.md) for target budgets and correctness gates. Budgets fail at equality where enforced; unknown evidence cannot certify them. Budget misses do not justify removing checks. Use the [optimization playbook](references/02-optimization-playbook.md) after measuring: check duplicate/superseded work, setup and checkout, cache misses, and shard imbalance before large changes. Compare the current setup against applicable alternatives; no default vendor or stack migration. Keep a cheap full PR suite when selection adds overhead or risk. Load [toolchain migration](references/15-toolchain-migration.md) only for relevant JS/TS options.
+Use the [strict performance targets](references/14-two-minute-ci.md#acceptance-and-audit). Proven stage/job bounds fail at equality when enforced; track rolling targets separately. Rank the largest measured required-path bottleneck, then use the [optimization playbook](references/02-optimization-playbook.md) and [applicable defaults](references/14-two-minute-ci.md#runner-and-setup-changes). Keep the incumbent when it wins, including a cheap full PR suite. For a JS/TS bottleneck, load [toolchain migration](references/15-toolchain-migration.md) for pinned Bun/TS7 candidates and coverage parity.
 
 ## Validation architecture
 
@@ -64,7 +65,7 @@ Keep `ci` or the existing required identity stable. On GitHub, add `merge_group:
 
 1. **One change at a time.** Run old/new on the same source and workload before replacing tools. Record diagnostics, missing rules/files, test IDs/count/coverage, build/declaration outputs, elapsed time and memory. Pin versions and include cold/warm paths.
 2. **Prove red.** Exercise real broken behavior and assert nonzero through the required gate. Cover child failure, cancellation, unexpected skip, missing shard/report, stale revision and malformed selection. An intentionally expected failure in a regression test is not permission to swallow failures in CI.
-3. **Enforce budgets.** Use a monotonic command guard such as `scripts/run_budget.py` for work duration and provider job timestamps for waiting/setup. Keep the enforcement/reporting lane itself bounded. Do not widen limits or exclude slow observations to make the dashboard green.
+3. **Enforce proven bounds.** Use a monotonic command guard such as `scripts/run_budget.py` for work duration and verified provider boundaries for job phases. Keep reporting bounded; never widen limits or exclude slow observations to make the dashboard green.
 4. **Prepare one small change per intervention.** Include available linked runs, exact commits, sample size, full inventory/coverage evidence, misses, cost assumptions and rollback. Label the gain measured, estimated or hypothetical. Small samples are preliminary; one run does not establish p95.
 5. **Validate on CI when authorized.** Compare required-path time, aggregate runner minutes and estimated/actual cost. Recompute the path after each change. Merge only through the configured full-suite queue when authorized; do not use admin bypass.
 

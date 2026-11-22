@@ -62,8 +62,10 @@ each script's `--help` before using it.
    unknowns are resolved.
 2. Fill the [Option screen](../templates/audit-report.md#option-screen) for every
    family; rank only material choices against keeping or tuning the incumbent.
-3. Rank required-path gains by evidenced impact, with correctness first. Keep
-   redistribution and cost-only effects distinct. Static leads need a read-only
+3. Rank required-path gains by evidenced impact, with correctness first. Consult
+   the [applicable defaults](14-two-minute-ci.md#runner-and-setup-changes) only for
+   measured bottlenecks. Keep redistribution and cost-only effects distinct.
+   Static leads need a read-only
    next measurement, not a migration order. [Measurement guide](04-measurement-benchmarking.md).
 4. Run the [pre-publish review](03-security-correctness.md#before-publishing-a-report), then deliver the report and proposed sequence. If scoped implementation is already authorized, continue; otherwise stop before the unapproved action.
 
@@ -80,7 +82,7 @@ each script's `--help` before using it.
 ### C. Implement and verify
 
 - **One independently reversible PR per intervention.** Runner migration, test selection, test isolation and permission changes each ship alone. Use the [optimization PR template](../templates/optimization-pr.md); config starting points are in [recipes](07-config-recipes.md).
-- Keep existing check names and required gates. Run full relevant verification on the change, and prove each changed gate goes red on a probe commit.
+- Preserve or grow rules and required gates, and keep check identities stable. Run full relevant verification on the change, and prove each changed gate goes red on a probe commit.
 - Workflow permissions or cache trust boundaries changed → security-owner review. Cost, vendor or trust jurisdiction changed → project-owner review. Coverage, isolation or affected selection changed → test-owner review plus mutation checks.
 - Success is claimed from post-merge CI telemetry, not local benchmarks: reruns, workload state and gate migration per [CI-side verification](04-measurement-benchmarking.md#ci-side-verification).
 - Gate redistribution: shadow selected vs full results, retain the full-suite oracle, prove event-specific aggregates and exact release provenance, and account for risk/latency transferred to integration. A smaller PR workload is not a same-work speed-up.
@@ -91,9 +93,11 @@ Track p50/p95 first-execution PR feedback (by outcome) and first-push-to-green
 separately, plus queue/setup breakdown, p95 critical path, cache efficiency,
 reruns, skipped-vs-full selection, cost per merged PR, false greens, escaped
 defects and release provenance. Re-assess after each change: bottlenecks move.
-Report the new gate, not the old job's gain as wait removed. Enforce runner wait
-<10 s, setup <30 s, lint/typecheck <5 s and test work <60 s per shard. Investigate
-any retry, false green or threshold breach. Rollback triggers:
+Report the new gate, not the old job's gain as wait removed. Report target versus
+observed for the [strict profile](14-two-minute-ci.md#acceptance-and-audit); only
+enforce bounds with proven phase evidence. Investigate retries, false greens and
+breaches. For proposed test pruning, use the [two-week review](14-two-minute-ci.md#two-week-pruning-review).
+Rollback triggers:
 [measurement guide](04-measurement-benchmarking.md#monitoring-and-rollback).
 
 Check the agreed PR budget and category-3 completion/freshness independently. Give full pre-main queue runs unique concurrency groups; post-push coalescing cannot replace them. A failed full run blocks eligibility for that commit; follow the repo's fix-forward/revert policy and incident owner. Missing rollout telemetry pauses promotion.

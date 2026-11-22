@@ -27,9 +27,10 @@ Inspect script bodies, configuration, selected files, flags, exit propagation an
 
 ## PR feedback budget
 
-Target latest-revision PR feedback p50 <120 seconds and p95 <180 seconds. Record
-targets and measured baselines separately. Measure first execution end to end,
-including dispatch, waiting, setup, work and aggregate reporting:
+Apply the [strict targets](14-two-minute-ci.md#acceptance-and-audit) to
+latest-revision PR feedback. Record targets and observations separately. Measure
+first execution end to end, including dispatch, waiting, setup, work and aggregate
+reporting:
 
 | Metric | Start | Finish and interpretation |
 |---|---|---|
@@ -53,15 +54,18 @@ breaches. Report pre-main queue wait and full execution on the exact candidate
 separately from supplemental post-push observations. Record sample size, cohort,
 config era and cache state; small-sample p95 is preliminary.
 
-A timeout bounds a stuck process; it is not a feedback budget. Enforce measured per-run stage/job budgets with a nonpassing result at or above the limit. Diagnose breaches and change capacity or scheduling; do not silently revise the objective. It never authorizes skipping tests, downgrading checks, masking failure or declaring unfinished work green. High-risk changes may legitimately require a longer PR path.
+A timeout bounds a stuck process; it is not a feedback objective. Only proven
+stage/job bounds are eligible for per-run enforcement, with a nonpassing result at
+or above the limit. Diagnose breaches and change capacity or scheduling. Keep
+full protection even when a high-risk PR misses the objective.
 
 ## Placement algorithm
 
 1. Inventory the four categories, current commands, unique failure modes, required check identities and trust boundaries. Mark absent evidence unknown; retain the current protection until replacement is proven.
 2. Verify and configure the required full-suite merge queue/train. Document the evidence preceding PR feedback, queue admission, artifact eligibility and release; report unavailable enforcement as a blocker.
-3. Map the diff through verified dependencies and change-to-check contracts. Run relevant category 2 tests on PRs; treat security/authentication, payments, schema/migrations, shared contracts, generated inputs, CI/selector policy and other declared high-risk changes conservatively. High risk or unknown base/graph/coverage/confidence forces FULL before integration.
-4. Retain category 1 rules and every uniquely required test at its approved boundary. Include transitive dependents and non-code inputs. Do not infer relevance from filenames alone or skip integration tests solely because they are slow.
-5. Optimize the measured required path using the seven modules. If a local hook is applicable and requested, verify it runs in <9 seconds; CI remains authoritative and hook bypass never counts as proof.
+3. Keep a cheap full PR suite. Where selection would help, map the diff through verified dependencies and approved change-to-check contracts. Document [FULL triggers](14-two-minute-ci.md#selection-negative-control); high risk or uncertain base, graph or coverage force FULL.
+4. Preserve or grow category 1 rules and required checks, and keep every uniquely required test at its approved boundary. Include transitive dependents and non-code inputs. Do not infer relevance from filenames alone or skip integration tests solely because they are slow.
+5. Optimize the measured required path using the seven modules. Parallelize independent work without breaking real dependencies or weakening the aggregate. If a local hook is applicable and requested, verify it against the strict pre-push target; CI remains authoritative.
 6. Validate selected-versus-full equivalence and gate failures in shadow mode before migrating. If safe placement cannot meet the budget, keep the protection and report the trade-off.
 7. Require full integrated evidence plus category 4 evidence for the exact release artifact. A later lane cannot retroactively protect an earlier boundary.
 
@@ -123,7 +127,7 @@ Choose the existing platform's rollout mechanism; do not require Kubernetes or a
 
 ## Worked examples
 
-**Polyglot service (Go API + Next.js UI).** Inspect actual scripts first. Category 1 may include formatting/static checks and route-aware type validation. Category 2 runs relevant Go/UI tests plus changed API contracts; payment/auth/schema changes force FULL. Target latest-revision p50 <120 seconds and p95 <180 seconds, with observed values initially unknown. Category 3 validates the integrated backend/frontend and required platform/database matrix through the existing merge queue. If a queue is unavailable, prepare the configuration and report activation as blocked; do not merge. Category 4 validates the immutable application artifacts, schema compatibility and a telemetry-gated staged release; a feature flag does not replace migration checks.
+**Polyglot service (Go API + Next.js UI).** Inspect actual scripts first. Category 1 may include formatting/static checks and route-aware type validation. Category 2 runs relevant Go/UI tests plus changed API contracts; payment/auth/schema changes force FULL. Apply the strict PR objective, with observed values initially unknown. Category 3 validates the integrated backend/frontend and required platform/database matrix through the existing merge queue. If a queue is unavailable, prepare the configuration and report activation as blocked; do not merge. Category 4 validates the immutable application artifacts, schema compatibility and a telemetry-gated staged release; a feature flag does not replace migration checks.
 
 **Small library.** If the full required suite already meets the chosen PR objective, keep it on every PR. Run formatting/types/API checks and full tests together if that is cheapest; no graph, shards or dependency cache is required merely to fill four categories. Still require full pre-main merge-queue verification. Category 4 verifies the built package, declaration/API compatibility, installation and supported consumers before an authorized publication. Use release-candidate consumers or staging instead of traffic percentages; preserve the exact package digest.
 

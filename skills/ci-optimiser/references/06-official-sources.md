@@ -57,8 +57,9 @@ Use the sources below for relevant GitHub and stack details.
 ## Validation architecture and reviewed updates (2026-11-17)
 
 The earlier four-category/rolling-main material is retained as historical analysis.
-The 2026-11-20 strict contract requires pre-main queue execution and p50 <120 s /
-p95 <180 s; these are user requirements, not provider guarantees or measured gains.
+The [strict performance contract](14-two-minute-ci.md#acceptance-and-audit)
+defines current targets and pre-main queue execution. These are user requirements,
+not provider guarantees or measured gains.
 
 | Topic | Fact relied on | URL |
 |---|---|---|
@@ -130,6 +131,9 @@ p95 <180 s; these are user requirements, not provider guarantees or measured gai
 Current paid-runner quotes; actual billing/allowances; GHES/plan feature support;
 downstream framework/compiler/plugin compatibility; complete test-selection coverage;
 cryptographic provenance verification; telemetry comparability; measured savings.
+Also unconfirmed: warm-image availability/capacity and isolation on the target
+plan; exact Bun pin/runtime support for moving-doc test imports and module
+isolation; rule, format, type and test coverage on the target; hk coverage and wall time.
 These require target evidence. Python helper fixtures do not establish production
 support for every stack or a measured performance improvement.
 
@@ -149,8 +153,8 @@ support for every stack or a measured performance improvement.
 
 ## Strict contract and toolchain review (2026-11-20)
 
-The 120/180-second PR targets and per-stage budgets are user requirements. None
-is a provider SLA. Current tool support is conditional on repository parity tests.
+The entries below support tool claims, not target timings. Tool adoption depends
+on repository parity tests.
 
 | Topic | Fact relied on | URL |
 |---|---|---|
@@ -175,6 +179,16 @@ is a provider SLA. Current tool support is conditional on repository parity test
 | Blacksmith sizing/cost | Available 8-vCPU labels; shared 3,000 base-equivalent monthly minutes; size-adjusted allowance | https://docs.blacksmith.sh/blacksmith-runners/overview |
 | Blacksmith pricing | Listed x64 base rate $0.004/min; optional storage separately priced; OSS program requires application | https://www.blacksmith.sh/pricing |
 | GitHub public billing | Standard hosted compute in public repositories is free; actual plan/storage/larger-runner charges remain separate | https://docs.github.com/en/billing/concepts/product-billing/github-actions |
+
+## Strict profile tool checks (2026-11-22)
+
+| Topic | Fact relied on | Primary source |
+|---|---|---|
+| Bun format | Bun 1.4.4 ships `bun fmt`; CI needs nonwriting `--check` and built-in `--no-script` dispatch. Verify both on the exact pin | [1.4.4 release](https://bun.com/blog/bun-v1.4.4) |
+| Bun lint | 1.4.4-tagged docs put built-in lint on canary only; current docs describe `.oxlintrc.json` and `--no-script`, not support on that stable pin | [Tagged docs](https://github.com/oven-sh/bun/blob/bun-v1.4.4/docs/lint/index.mdx) · [Current docs](https://bun.com/docs/lint) |
+| Bun tests | Current docs describe `vitest` imports, seeded randomization and `--isolate=modules`; the tagged 1.4.4 test docs do not establish the import or module-isolation support | [Imports](https://bun.com/docs/test/writing-tests) · [Isolation](https://bun.com/docs/test/parallel) · [Seed controls](https://bun.com/docs/test) |
+| hk hooks | Repo-local installation and selective applicability; verify installed hook, index handling and affected-check coverage | [Getting started](https://jdx.github.io/hk/getting_started.html) |
+| Runner billing | Blacksmith lists $0.004/min for base x64 and a shared 3,000 2-vCPU-equivalent minutes/month; GitHub standard hosted compute is free for public repos. Verify actual SKU/allowance and ancillary billing | [Blacksmith runners](https://docs.blacksmith.sh/blacksmith-runners/overview) · [Blacksmith pricing](https://www.blacksmith.sh/pricing) · [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions) |
 
 ## Manual cloud timing audit (2026-11-20)
 

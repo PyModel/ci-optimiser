@@ -55,11 +55,14 @@ Use the [validation architecture](../references/08-validation-architecture.md). 
 
 Main policy: full suite in the required merge queue/train before main. See [merge admission and evidence](#merge-admission-and-evidence) for the decision and blockers. Post-push/nightly runs are supplemental.
 
-Queue controls: <full inventory, no test-result cache replay, unique concurrency group, all entries pass>. PR-only selection fallback: <FULL>. Every obligation remains before main; list any activation blocker.
+Queue controls: <full inventory, no test-result cache replay, unique concurrency group, all entries pass>. PR-only selection fallback: <documented FULL triggers, or keep full PR suite>. Preserve or grow rules and required checks; list any activation blocker.
 
 ## PR feedback objective
 
-Chosen objective: latest-revision **p50 <120 s / p95 <180 s**. Require runner wait <10 s, setup <30 s, lint/types <5 s, tests <60 s/shard and local hook <9 s. Enforced at-limit/over-budget work fails. Targets are never measured baselines.
+Use the [strict performance targets](../references/14-two-minute-ci.md#acceptance-and-audit).
+Record target, observed value and coverage separately. For each proven enforced
+stage/job bound, report at-limit and over-limit results as failures. Do not treat
+rolling percentile or cache targets as per-run deadlines.
 
 | Metric | p50 | p95 | n / window | Start → finish / limitations |
 |---|---|---|---|---|
@@ -90,13 +93,16 @@ history: <counts and effect>. Normalized dependency graph: <source/expansion pro
 | each job: runner wait | | | | use native timing where proven; name any created → started proxy and distinguish dependency and approval waits |
 | each job: setup | | | | explicit phase markers; missing evidence unknown |
 | each job: running | | | | preserve work inventory and outcomes |
+| slowest required job: runner elapsed | | | | start → completion, including setup/save/teardown; distinguish it from the longest required path |
+| lint, format, typecheck, test work per shard | | | | record separately per applicable command/shard with provenance |
 | each job: teardown/unattributed | | | | do not add overlapping percentiles |
 | setup share | | | | |
 | shard skew | | | | |
 | suspected same-run retry recovery | | | | logs distinguish flakiness, repair and intentional reruns |
 | first-pass failure rate | | | | verify attempts; separate intentional reruns and repair delay |
 | gap to runner-up job | | | | observational only; dependency-path recomputation determines possible saving |
-| cache hit rate | unknown | | | needs logs |
+| exact eligible PR dependency-cache hits | unknown | | | exact primary-key hits / full eligible denominator; separately show fallback, misses, errors and unknowns |
+| local pre-push wall time | unknown | | | installed hook, including startup; not a CI result |
 | cost per merge | unknown | | | needs pricing |
 
 Critical path: `<job A> → <job B> → <job C>` (see `critical-path.md`). Gating job: `<name>`, last in <k>/<n> runs, required: yes / no / unknown. Config changed in window: no / yes → `--since <date>`.
@@ -123,7 +129,8 @@ Missing required inputs mean unknown cost or savings, not zero.
 For each family record applicability and a disposition: **keep**, **tune**,
 **replacement candidate**, **insufficient evidence**, or **not applicable**.
 Do not mark missing evidence as not applicable. The
-[playbook](../references/02-optimization-playbook.md) governs adoption.
+[playbook](../references/02-optimization-playbook.md) governs adoption; consult
+the [conditional defaults](../references/14-two-minute-ci.md#runner-and-setup-changes) for matching measured bottlenecks.
 
 | Family | Applicability | Disposition | Reason / next proof |
 |---|---|---|---|
@@ -170,7 +177,8 @@ verification, rollback, and one next action.
 
 ## Migration proof
 
-- Selected-versus-FULL shadow comparison on identical representative revisions: <results, test identities, seeded/adversarial failures, unknowns>.
+- Selected-versus-FULL shadow comparison on identical representative revisions: <results, test identities, real omitted-defect negative control, unknowns>.
+- Test pruning, if proposed: <two-week failure log, protected coverage, proved redundant detection and retained guard>.
 - Failure probes: <child failure, unexpected skip, cancellation/timeout, missing report/shard, wrong/stale SHA or policy/artifact mismatch all reject green/eligibility>.
 - Workload state: <same / reduced / increased / changed / unknown; match identities, not counts, before claiming same-work speed>.
 - If redistributed: <work retained across PR + queue + post-push + release; total runner-minutes; PR gain; full-green delay; changed detection window/risk>.
