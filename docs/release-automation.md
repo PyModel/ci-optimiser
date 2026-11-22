@@ -63,6 +63,25 @@ commit titles are not automatically classified or rewritten. If the first releas
 notes need to describe those changes, add a reviewed, accurate summary to the
 release PR; do not invent a history or claim that the bot inferred it.
 
+### Successful run with no release PR
+
+Start with the `version` job. A `commit could not be parsed` message followed by
+`No commits for path` means Release Please found no eligible commit for that
+path. For a releasable change that was already squash-merged under a malformed
+title, add an accurate [commit-message override](https://github.com/googleapis/release-please/blob/v17.6.0/README.md#how-can-i-fix-release-notes)
+to the original merged PR body, preserving its existing content:
+
+```text
+BEGIN_COMMIT_OVERRIDE
+feat: describe the feature that already landed
+END_COMMIT_OVERRIDE
+```
+
+This corrects the release input without rewriting `main`. Editing the merged PR
+does not start a workflow. After the next change merges through the queue and
+first-attempt `main` CI passes, verify the bot PR's version and changelog. Do not
+rerun the old workflow, force-push `main` or tag a release manually.
+
 ## What the gates establish
 
 The workflow starts only from a successful `ci` completion for a `push` to `main`
