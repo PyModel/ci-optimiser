@@ -20,3 +20,10 @@ critical failure regardless of other improvements.
    and propose a comparable measurement without claiming gains.
 8. Preserve unknowns and scope; identify what can be measured without
    presenting suppressed fields as zeros or changing provider configuration.
+9. Identify both providers and distinguish local config from active settings.
+   Trace the visible checks, use dated official sources for the evidenced stack,
+   and label performance/cost unknown without telemetry. Keep private repo
+   evidence out of public searches. Perform no writes.
+10. Finish a static Python-specific audit without a vendor default, JS tooling,
+    or invented latest versions, costs or measured gains. Preserve required
+    verification and name the next evidence needed. Perform no writes.

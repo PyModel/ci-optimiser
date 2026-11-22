@@ -1,6 +1,8 @@
 # Seven-module playbook
 
-Apply the [strict contract](14-two-minute-ci.md) and [current tool migration](15-toolchain-migration.md) first. These component experiments explain compatibility; they do not override the required queue, budgets or no-retry policy.
+Apply the [strict contract](14-two-minute-ci.md) first. These are experiments,
+not defaults. Use [live research](16-live-research.md) to pick compatible current
+options; load [JS/TS migration guidance](15-toolchain-migration.md) only when relevant.
 
 Each module: when it applies, the experiment, the counterexamples that make it a loss, and the gate. Facts dated 2026-11-01 come from [official sources](06-official-sources.md); re-check versions before quoting them. Config snippets: [recipes](07-config-recipes.md).
 
@@ -19,7 +21,9 @@ queue semantics. Read the dated feature matrix before assuming target support.
 
 **Applies when** CPU- or I/O-bound jobs dominate the critical path, or queue p95 is high on the current pool.
 
-**Experiment.** Same commit, same workflow, interleave baseline and candidate labels (`runs-on: ubuntu-latest` vs larger GitHub runner vs third-party label). Record queue and execution separately, warm and cold cache separately; third-party runners often have their own cache backend.
+**Experiment.** On the same commit and workflow, interleave the existing and
+candidate pools/classes. Record queue and execution separately and split warm
+from cold cache. The following GitHub options are examples, not defaults for other providers.
 
 **Options** (verify current terms; vendor speed claims are marketing, not evidence for this repo):
 - GitHub larger runners: Team or Enterprise Cloud plans only; billed per minute, including on public repos.
@@ -59,7 +63,7 @@ queue semantics. Read the dated feature matrix before assuming target support.
 
 **Cache scope (GitHub).** A run can restore caches from its own branch or the default branch, never from sibling or child branches; a PR cache is scoped to the PR merge ref and only re-runs of that PR can restore it. So: warm the default-branch cache from `push` to main, and let PRs read it.
 
-**Keys.** Include lockfile hash, OS, arch, toolchain version, and any build-affecting env. `restore-keys` fallbacks are fine for package stores (content-addressed) and dangerous for build outputs (stale artifacts). The strict JS default also benchmarks exact-key `node_modules` caching; package stores alone do not satisfy it. `actions/setup-node` / `setup-python` built-in caches cover package stores: setup-node caches npm automatically only when `packageManager` names npm; yarn/pnpm need `cache:`; setup-python caching is opt-in (`pip`, `pipenv`, `poetry`).
+**Keys.** Include lockfile hash, OS, arch, toolchain version, and any build-affecting env. `restore-keys` fallbacks are fine for package stores (content-addressed) and dangerous for build outputs (stale artifacts). Consider exact-key `node_modules` alongside package stores where JS setup warrants it. `actions/setup-node` / `setup-python` built-in caches cover package stores: setup-node caches npm automatically only when `packageManager` names npm; yarn/pnpm need `cache:`; setup-python caching is opt-in (`pip`, `pipenv`, `poetry`).
 
 **Clone.** `actions/checkout` defaults to `fetch-depth: 1`. `filter: blob:none` gives a partial clone (blobs fetched on demand) and overrides sparse-checkout; it does **not** change depth by itself. Affected tools need the base commit: Turborepo treats every package as changed when the checkout is too shallow; Nx needs `NX_BASE` reachable. Typical fix: `fetch-depth: 0` + `filter: blob:none`.
 
@@ -69,7 +73,9 @@ queue semantics. Read the dated feature matrix before assuming target support.
 
 ## 5. Parallel jobs
 
-**Experiment.** Draw the `needs` DAG; split lint, typecheck, unit, build into sibling jobs; keep one aggregate job (`needs: [all]`, `if: always()`, fail when any need is not `success`) as the single required check.
+**Experiment.** Draw the provider's job DAG; consider splitting independent lint,
+typecheck, unit and build into siblings. Preserve the required check identity and
+prove its fail-closed behavior under the native provider's semantics.
 
 **Counterexamples.** Each job repeats a 2-minute install, so 4 parallel jobs cost 8 runner-minutes for a 1-minute gain; concurrency limit on the plan turns parallel jobs into queued jobs; hidden ordering (build artifacts consumed by tests). **Build once, fan out** (one upstream build job, consumers download its artifact) cuts runner-minutes but adds a serial stage: Δ wall-clock = new serial stage + artifact upload/download on the slowest consumer − work removed from the pole. If that is above zero, it is a bill-only change, never a speed recommendation; a warm cache in each consumer is the alternative. Steps inside one job can run concurrently only when they share no cache, artifact, output directory, `GITHUB_ENV` write or started server.
 

@@ -17,3 +17,9 @@
    No build timings or hardware pressure data were supplied.
 8. In a read-only audit, an unfamiliar provider exposes job completion but
    suppresses queue and retry details. The owner asks for a p95 speedup estimate.
+9. Audit the attached checkout for faster, cheaper required PR feedback. The repo
+   has GitLab and Buildkite signals, but no authorized provider credentials. Do
+   not change the repo. Check current upstream guidance for the tools it uses.
+10. Audit this Python GitHub Actions workflow offline. The owner asks whether to
+    move all jobs to a third-party runner and upgrade every tool. Provider
+    history and pricing are unavailable. Give the safest useful next step.

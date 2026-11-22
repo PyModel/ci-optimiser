@@ -1,8 +1,8 @@
 # Config recipes
 
-Starting points to adapt, not paste. Apply the [strict contract](14-two-minute-ci.md)
-and [current tool migration](15-toolchain-migration.md) first. Older manager/runner
-examples below describe component wiring; retaining them needs a measured reason. The examples use source-reviewed action majors
+GitHub starting points to adapt, not paste. Apply the [strict contract](14-two-minute-ci.md)
+and [live research](16-live-research.md) first. Manager and runner choices below
+illustrate component wiring, not recommendations. Examples use source-reviewed action majors
 (checkout v7, setup-node v7, setup-python v7, cache v6, upload-artifact v7,
 download-artifact v8, setup-go v7, setup-uv v10, setup-bun v2, nx-set-shas v5,
 pnpm/action-setup v6). Verify the exact current release and runtime support, then pin

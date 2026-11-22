@@ -30,10 +30,18 @@ as unknown. A script called `test` may cover all tests, selected tests, or no te
 | Packaging/deployment files, flags, rollout and monitoring policy | Which product-specific release gates and telemetry exist? |
 | Provider timings and expected arrival rate | Is the proposed PR budget achievable without moving unbounded work elsewhere? |
 
-Inventory other providers by file name, then read their configuration and API evidence
-with the appropriate adapter. Do not infer an absent deployment system merely because
-GitHub workflow heuristics found none. Do not execute package scripts or install hooks
-to discover what they do.
+Inventory all providers before choosing a collector. `providers` groups filename
+signals; `root_configs` distinguishes repository-root conventions from nested
+examples or components. Verify entries against the actual checkout and repo
+metadata: inspected remotes/SCM host, branch/check settings, configured project
+connections, and available authorized CLI/API access. An installed tool, matching
+remote host or filename is only a lead. Promote `configured_unconfirmed` to
+**observed active** only on recent runs/checks bound to this repo or direct
+evidence of an active provider configuration. If no signals are found, CI
+location is **unknown**: check repo policy, commit statuses or existing provider
+settings for custom paths, inline config and external systems. Do not install
+tools/hooks, run scripts, resolve dynamic configs by execution or contact
+untrusted URLs found in repo files.
 
 ## Stack → applicable modules
 
@@ -50,16 +58,24 @@ to discover what they do.
 
 ## CI provider adapters
 
-| Provider | Config | Read-only run data | Notes |
+| Provider | Local signals | Inspect statically | Evidence support |
 |---|---|---|---|
-| GitHub Actions | `.github/workflows/*.yml` | `scripts/collect_gh.py` (REST via `gh api`) | job `needs` only in YAML; required checks via branch protection or rulesets |
-| GitLab CI | `.gitlab-ci.yml` | `GET /projects/:id/pipelines`, `/pipelines/:id/jobs` (token with `read_api`) | `needs:` DAG and `rules:changes` live in YAML |
-| CircleCI | `.circleci/config.yml` | API v2 `/insights/...` and `/pipeline/:id/workflow` | test splitting by timing is built in |
-| Buildkite | `.buildkite/*.yml` / UI pipelines | REST `/builds` with `read_builds` | agent queues are the runner pool |
-| Azure Pipelines | `azure-pipelines.yml` | `_apis/build/builds`, timeline API | |
-| Jenkins | `Jenkinsfile` | `/api/json?tree=...` | agents are long-lived: weigh isolation |
+| GitHub Actions | `.github/workflows/*.{yml,yaml}` | Events, `needs`, reusable workflows, matrices, runner class, cache trust and required checks/rulesets | Bundled history collector and analyzer; [field guide](12-field-guide.md) |
+| GitLab CI | `.gitlab-ci.yml` | `workflow`/job `rules`, `include`/`extends`, `needs`, child pipelines, runner tags and cache policy | Static + bundled single-pipeline snapshot; [measured adapters](13-measured-adapters.md#commands-and-evidence-boundaries). History via authorized pipeline/jobs evidence |
+| CircleCI | `.circleci/config.yml` | Workflow filters/`requires`, orbs, setup/continuation, executor/resource class and workspaces vs caches | Static; use authorized pipeline/workflow/jobs or Insights data if available |
+| Buildkite | `.buildkite/*.{yml,yaml}` or provider config | Upload steps, `depends_on`/wait/block steps, branch filters, plugins and agent queues | Static; use authorized builds/jobs evidence if available |
+| Azure Pipelines | `azure-pipelines.{yml,yaml}` or configured path | Stages/jobs and `dependsOn`, templates, conditions, pools, triggers and backing SCM branch policy | Static; use authorized build history and timeline evidence if available |
+| Jenkins | `Jenkinsfile` or configured path | Declarative/scripted stages, job/multibranch config, shared libraries, agent labels, parallelism and status publishing. Do not execute Groovy | Static; use authorized controller build evidence if available |
 
-Normalize other providers into the `runs.json` / `jobs/<id>.json` shape in [measurement](04-measurement-benchmarking.md#raw-schema) so `analyze_gh.py` can read them.
+Other recognizable configs (e.g. Bitbucket Pipelines or CodeBuild) and unfamiliar
+providers get the same generic audit: map trigger → dependency DAG → runner pool
+→ required result and protected merge boundary; trace scripts and cache/artifact
+inputs. List unresolved external or dynamic parts. Never substitute GitHub
+semantics or assume a nested config is scheduled. Validate native formats against
+the dated [provider source index](06-official-sources.md#provider-configuration-sources-2026-11-22).
+For external run data, calculate only metrics whose native timestamps and attempt
+identities are understood. Use [normalized evidence](11-evidence-formats.md) where
+semantics match; do not feed native payloads into `analyze_gh.py`.
 
 ## Workflow risk flags from discovery
 

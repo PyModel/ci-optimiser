@@ -18,7 +18,7 @@ import os
 import re
 import stat
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 SKIP_DIRS = {
     ".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build",
@@ -29,13 +29,22 @@ MAX_FILES = 200_000
 MAX_READ_BYTES = 1_000_000
 MAX_LANGUAGE_EXAMPLES = 20
 
+CI_CONFIGS: dict[str, tuple[str, ...]] = {
+    "github_actions": (".github/workflows/*.yml", ".github/workflows/*.yaml"),
+    "gitlab_ci": (".gitlab-ci.yml",),
+    "circleci": (".circleci/config.yml",),
+    "azure_pipelines": ("azure-pipelines.yml", "azure-pipelines.yaml"),
+    "jenkins": ("Jenkinsfile",),
+    "buildkite": (".buildkite/*.yml", ".buildkite/*.yaml"),
+    "bitbucket_pipelines": ("bitbucket-pipelines.yml",),
+    "travis_ci": (".travis.yml",),
+    "drone": (".drone.yml",),
+    "aws_codebuild": ("buildspec.yml",),
+    "google_cloud_build": ("cloudbuild.yaml",),
+    "woodpecker": (".woodpecker.yml",),
+}
+
 CATEGORIES: dict[str, tuple[str, ...]] = {
-    "ci": (
-        ".github/workflows/*.yml", ".github/workflows/*.yaml", ".gitlab-ci.yml",
-        ".circleci/config.yml", "azure-pipelines.yml", "Jenkinsfile",
-        ".buildkite/*.yml", "bitbucket-pipelines.yml", ".travis.yml",
-        ".drone.yml", "buildspec.yml", "cloudbuild.yaml", ".woodpecker.yml",
-    ),
     "lockfiles": (
         "package-lock.json", "npm-shrinkwrap.json", "pnpm-lock.yaml", "yarn.lock",
         "bun.lock", "bun.lockb", "uv.lock", "poetry.lock", "Pipfile.lock",
@@ -391,21 +400,14 @@ def language_evidence(files: list[str]) -> dict:
 
 def provider_for(path: str) -> str:
     """Name the provider from the config path, without interpreting its gates."""
-    checks = (
-        ("github_actions", (".github/workflows/*.yml", ".github/workflows/*.yaml")),
-        ("gitlab_ci", (".gitlab-ci.yml",)),
-        ("circleci", (".circleci/config.yml",)),
-        ("azure_pipelines", ("azure-pipelines.yml",)),
-        ("jenkins", ("Jenkinsfile",)),
-        ("buildkite", (".buildkite/*.yml",)),
-        ("bitbucket_pipelines", ("bitbucket-pipelines.yml",)),
-        ("travis_ci", (".travis.yml",)),
-        ("drone", (".drone.yml",)),
-        ("aws_codebuild", ("buildspec.yml",)),
-        ("google_cloud_build", ("cloudbuild.yaml",)),
-        ("woodpecker", (".woodpecker.yml",)),
-    )
-    return next((name for name, patterns in checks if any(matches(path, pattern) for pattern in patterns)), "unknown")
+    candidate = PurePosixPath(path)
+    return next((name for name, patterns in CI_CONFIGS.items()
+                 if any(candidate.match(pattern) for pattern in patterns)), "unknown")
+
+
+def root_ci_config(path: str, provider: str) -> bool:
+    """Given a matching path, distinguish root config from a nested candidate."""
+    return any(path.count("/") == pattern.count("/") for pattern in CI_CONFIGS[provider])
 
 
 def adapter_candidates(files: list[str], packages: dict, found: dict) -> list[dict]:
@@ -444,7 +446,8 @@ def adapter_candidates(files: list[str], packages: dict, found: dict) -> list[di
     return candidates
 
 
-def validation_topology(found: dict, packages: dict, workflows: dict, truncated: bool, issues: list[dict]) -> dict:
+def validation_topology(found: dict, packages: dict, workflows: dict, providers: dict[str, list[str]],
+                        truncated: bool, issues: list[dict]) -> dict:
     """Locate evidence for an agent's assessment; never assign checks by name.
 
     The four questions are assessment targets, not four required workflows.
@@ -463,9 +466,6 @@ def validation_topology(found: dict, packages: dict, workflows: dict, truncated:
         "rollout_policy_candidates": found["rollout_policy"],
         "action_lockfiles": found["action_locks"],
     }
-    providers: dict[str, list[str]] = {}
-    for path in found["ci"]:
-        providers.setdefault(provider_for(path), []).append(path)
     markers = []
     for path, metadata in sorted(workflows.items()):
         for name, values in sorted(metadata.items()):
@@ -498,7 +498,10 @@ def validation_topology(found: dict, packages: dict, workflows: dict, truncated:
         "package_script_names": [{"path": path, "names": meta.get("scripts", [])}
                                  for path, meta in sorted(packages.items()) if "error" not in meta],
         "workflow_markers": markers,
+        "provider_activity": "configured_unconfirmed" if providers else "unknown",
         "providers": [{"provider": provider, "files": sorted(paths),
+                       "root_configs": sorted(p for p in paths if root_ci_config(p, provider)),
+                       "activity": "configured_unconfirmed",
                        "analysis": "line_markers_only" if any(p in workflows and "error" not in workflows[p] for p in paths) else "filenames_only",
                        "inspected_files": sorted(p for p in paths if p in workflows and "error" not in workflows[p]),
                        "expanded": False} for provider, paths in sorted(providers.items())],
@@ -514,16 +517,23 @@ def discover(root: Path) -> dict:
     issues: list[dict] = []
     files, truncated = walk(root, issues)
     found: dict[str, list[str]] = {c: [] for c in CATEGORIES}
+    found["ci"] = []
+    providers: dict[str, list[str]] = {}
     for rel in files:
         for cat, pats in CATEGORIES.items():
             if any(matches(rel, p) for p in pats):
                 found[cat].append(rel)
+        provider = provider_for(rel)
+        if provider != "unknown":
+            providers.setdefault(provider, []).append(rel)
+            found["ci"].append(rel)
     packages = {
         rel: package_meta(root / rel, root)
         for rel in found["manifests"] if rel.rsplit("/", 1)[-1] == "package.json"
     }
     workflows = {
-        rel: workflow_meta(root / rel, root) for rel in found["ci"] if rel.startswith(".github/workflows/")
+        rel: workflow_meta(root / rel, root) for rel in providers.get("github_actions", [])
+        if root_ci_config(rel, "github_actions")
     }
     detected_languages = language_evidence(files)
     languages = sorted(detected_languages)
@@ -539,12 +549,12 @@ def discover(root: Path) -> dict:
         "package_json": packages,
         "github_workflows": workflows,
         "adapter_candidates": adapter_candidates(files, packages, found),
-        "validation_topology": validation_topology(found, packages, workflows, truncated, issues),
+        "validation_topology": validation_topology(found, packages, workflows, providers, truncated, issues),
         "hints": {
             "js_modules_applicable": js,
             "project_graph_present": bool(found["monorepo"]),
             "hooks_present": bool(found["hooks"]),
-            "ci_provider_count": len({p.split("/")[0] for p in found["ci"]}),
+            "ci_provider_count": len(providers),
             "pinned_action_ratio": pinned_ratio(workflows),
         },
         "limitations": [

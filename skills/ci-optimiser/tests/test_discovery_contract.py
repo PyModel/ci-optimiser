@@ -36,7 +36,7 @@ class ValidationEvidenceTest(unittest.TestCase):
     def test_js_graph_and_delivery_sources_are_evidence_not_certification(self):
         secret = "SYNTHETIC_COMMAND_SECRET_8192"
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             write(root, "package.json", json.dumps({
                 "scripts": {"lint": "eslint .", "test:integration": f"TOKEN={secret} test-runner", "release": "publish"},
                 "devDependencies": {"nx": "1", "vitest": "1", "next": "1", "oxfmt": "1"},
@@ -126,9 +126,50 @@ jobs:
         self.assertEqual(topology["evidence_files"]["release_candidates"], [])
         self.assertTrue(any("external" in unknown for unknown in topology["unknowns"]))
 
+    def test_mixed_provider_checkout_counts_providers_not_files_or_directories(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            configs = {
+                "azure_pipelines": ["azure-pipelines.yaml"],
+                "buildkite": [".buildkite/pipeline.yaml", ".buildkite/checks.yml"],
+                "circleci": [".circleci/config.yml"],
+                "github_actions": [".github/workflows/ci.yml", ".github/workflows/ci.yaml",
+                                   "apps/demo/.github/workflows/example.yml"],
+                "gitlab_ci": [".gitlab-ci.yml"],
+                "jenkins": ["Jenkinsfile", "apps/api/Jenkinsfile"],
+            }
+            for paths in configs.values():
+                for path in paths:
+                    write(root, path)
+            write(root, ".github/workflows/examples/not-a-workflow.yml")
+            write(root, "apps/api/go.mod")
+            write(root, "apps/web/package.json", "{}")
+            write(root, "pnpm-workspace.yaml")
+            result = discovery.discover(root)
+        providers = {p["provider"]: p for p in result["validation_topology"]["providers"]}
+        self.assertEqual(set(providers), set(configs))
+        self.assertEqual(result["hints"]["ci_provider_count"], len(configs))
+        self.assertEqual(result["languages"], ["go", "javascript/typescript"])
+        self.assertTrue(result["hints"]["project_graph_present"])
+        for provider, paths in configs.items():
+            with self.subTest(provider=provider):
+                self.assertEqual(providers[provider]["files"], sorted(paths))
+                self.assertEqual(providers[provider]["activity"], "configured_unconfirmed")
+        self.assertEqual(providers["github_actions"]["root_configs"],
+                         [".github/workflows/ci.yaml", ".github/workflows/ci.yml"])
+        self.assertEqual(set(result["github_workflows"]), set(providers["github_actions"]["root_configs"]))
+
+    def test_no_recognized_ci_leaves_provider_activity_unknown(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            write(root, "ci/pipeline.yml")
+            result = discovery.discover(root)
+        self.assertEqual(result["validation_topology"]["providers"], [])
+        self.assertEqual(result["validation_topology"]["provider_activity"], "unknown")
+
     def test_unsupported_workflow_and_job_names_cannot_certify_categories(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             write(root, ".github/workflows/ci.yml", """on: [push]
 defaults: &shared {run: {shell: bash}}
 jobs:
@@ -150,7 +191,7 @@ jobs:
     def test_quoted_actions_counted_but_lockfile_does_not_prove_resolution(self):
         sha = "a" * 40
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             write(root, ".github/actions.lock", "{}")
             write(root, ".github/workflows/ci.yml", f"""on: push
 jobs:
@@ -172,7 +213,7 @@ jobs:
     def test_matching_commands_and_conditions_do_not_emit_source_text(self):
         secret = "SYNTHETIC_SECRET_NEVER_EMIT"
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             write(root, ".github/workflows/ci.yml", f"""on: push
 jobs:
   t:
@@ -190,7 +231,7 @@ jobs:
 
     def test_invalid_package_schema_does_not_abort_inventory(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             for number, content in enumerate(("[]", "null", "42", '"value"', "{")):
                 write(root, f"packages/bad{number}/package.json", content)
             write(root, "packages/valid/package.json", '{"scripts":{"test":"echo secret"}}')
@@ -240,7 +281,7 @@ class SafeDiscoveryReadTest(unittest.TestCase):
     @unittest.skipUnless(hasattr(os, "symlink"), "requires symlinks")
     def test_symlink_root_rejected_and_nested_ancestor_not_followed(self):
         with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp)
+            base = Path(tmp).resolve()
             original = write(base, "outside/nested/package.json", "{}")
             linked = base / "linked"
             linked.symlink_to(base / "outside", target_is_directory=True)
@@ -251,7 +292,7 @@ class SafeDiscoveryReadTest(unittest.TestCase):
 
     def test_byte_limit_is_enforced_on_read(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             small = write(root, "small", "hello")
             large = write(root, "large", "x" * 101)
             with mock.patch.object(discovery, "MAX_READ_BYTES", 100):

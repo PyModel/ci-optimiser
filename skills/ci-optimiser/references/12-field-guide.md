@@ -4,19 +4,49 @@ Load when conducting an audit or preparing a scoped optimization PR. Apply the [
 
 ## Entry checklist (before any change)
 
-Script paths below are relative to this skill's directory; from the target repo, call them by absolute path. Write evidence to `REPO/.ci-audit/` (`mkdir -p` it first) and add `.ci-audit/` to `REPO/.git/info/exclude` so it is never committed. All scripts are Python 3.10+ stdlib; read each script's `--help` before running it.
+Script paths are relative to this skill's directory. Use a private scratch
+directory (`AUDIT`) outside the target checkout for evidence; leave repo files and
+Git metadata untouched in `OBSERVE`. Scripts require Python 3.10+ stdlib; read
+each script's `--help` before using it.
 
-1. Read repo policy (`AGENTS.md`, `CLAUDE.md`, CONTRIBUTING, CODEOWNERS), CI config, deployment and protected-branch requirements. Follow the user's scope and existing authorization; surface unresolved policy conflicts before the affected action. Before proposing a change to a line, read its history (`git log --follow -p`, the PR that added it): a recent deliberate choice is the owner's policy, not a bug.
-2. Inventory: `python3 scripts/discover_repo.py --root REPO > REPO/.ci-audit/discovery.json`. It reads bounded regular `package.json` and GitHub workflow files, rejects file/directory symlinks, and inventories other files by name. Parsed config fields can still contain sensitive literals: keep evidence local and review before sharing. Verify each hint by reading approved files. Map evidence with the [discovery matrix](01-discovery-matrix.md) and build the four-category plan.
-3. Identify CI provider(s), runner trust domains, workflows and job `needs`, languages, lockfiles, monorepo graph, test runners, coverage gates, deployment paths, and secret **names and permission scopes only**.
-4. Identify permission boundaries: fork PR vs trusted branch vs merge queue vs release. GitHub collection needs authenticated `gh` with read access to Actions; benchmarking never justifies write scope.
-5. Collect up to 150 recent runs into an immutable, hashed snapshot (failed runs included, kept distinguishable):
-   `python3 scripts/collect_gh.py --repo OWNER/REPO --limit 150 --include-incomplete --retries 0 --out REPO/.ci-audit`
-   Add `--event pull_request --target-branch main`, or `--event push --branch main`, to separate loops. `--branch` filters history, not protected-policy scope. Use `--include-incomplete` to retain waiting/running observations, `--created`/`--workflow` for server filters, and `--incremental` for authenticated ETag revalidation. Exit 3 means explicit evidence gaps; inspect completeness, never reuse a failed payload. For GitLab native data and other evidence tools, see [measured adapters](13-measured-adapters.md).
-6. Analyze: `python3 scripts/analyze_gh.py --input REPO/.ci-audit --output REPO/.ci-audit/metrics.json`. It separates attempts, successful latency proxies, queue, overlap-aware setup, step distributions, recovery, partial reruns, runner seconds, estimated rounded minutes and uncertainty. Add `--graph`, `--cohort-context` and dated `--pricing` only with reviewed evidence. `--since` filters the entire run/job/attempt population; keep configuration eras separate.
-   Inspect freshness, completeness, sample sizes and unresolved identities. These are diagnostic proxies. For PR budgets, full-suite freshness and exact artifact eligibility, use `evaluate_validation.py` with a reviewed policy and provider-normalized evidence; it does not authenticate sources, verify signatures or enforce the strict median/tail/queue contract; its legacy scalar budget accepts equality. Missing/contradictory evidence cannot pass. See [evidence formats](11-evidence-formats.md).
-7. Establish p50/p95 for push→green, workflow wall, queue, setup, lint, typecheck, tests, cache hit/miss, flaky retries, runner spend, cost per merge, and tail outliers. Missing or inapplicable metrics are **unknown**, never zero.
-8. Read the [safety policy](03-security-correctness.md), [platform semantics](09-platform-updates.md) and relevant [stack adapters](10-stack-adapters.md). `inspect_workflows.py` accepts pinned-YAML-1.2-normalized JSON; expressions/reusable expansion and runtime identities remain unknown until resolved. Build the dependency DAG and name the slowest required path.
+1. Read repo policy, actual CI config and merge requirements. For a proposed change
+   to a deliberate setting, read its history. Inventory from the canonical,
+   nonsymlinked repo root: `python3 scripts/discover_repo.py --root REPO > AUDIT/discovery.json`.
+   Keep raw evidence private: parsed fields may contain sensitive literals.
+2. Verify the detected providers, actual commands, tools/pins and dependency graph
+   with the [discovery matrix](01-discovery-matrix.md). Map triggers, includes,
+   checks required at each boundary and the full-suite gate. Distinguish fork
+   PR, trusted branch, queue and release permissions.
+3. Prefer the requested connector or an existing authorized provider connection.
+   Sample up to 150 runs across outcomes, configurable; split PR, main, scheduled,
+   config eras and attempts. Record where history or policy is inaccessible. A
+   non-GitHub provider may have only native exports, a snapshot or static evidence;
+   never coerce missing fields into the GitHub format or collect past authorization.
+4. Report metric coverage (required-path p50/p95, waiting, setup, execution, runner
+   usage, cache efficiency and retries). Separate outcomes and sources; missing
+   metrics are **unknown**, never zero. Do not call the longest job the required
+   path without its dependencies and gate identity. Use the [safety policy](03-security-correctness.md)
+   and relevant [stack adapters](10-stack-adapters.md).
+5. Verify current options and costs with [live research](16-live-research.md),
+   then complete the audit even if you have only static evidence.
+
+### GitHub Actions history
+
+- With authenticated read-only access to the verified target, collect:
+  `python3 scripts/collect_gh.py --repo OWNER/REPO --limit 150 --include-incomplete --retries 0 --out AUDIT`.
+  Use `--event pull_request --target-branch main` or `--event push --branch main`
+  for scoped cohorts; `--branch` filters history, not protection. Exit 3 means
+  evidence is incomplete. If only protection is inaccessible, request timing-only
+  evidence with `--timings-only`; report protection as unknown.
+- Analyze: `python3 scripts/analyze_gh.py --input AUDIT --output AUDIT/metrics.json`.
+  It separates attempts and reports runner usage and rounding estimates, not a bill.
+  Add `--graph`, `--cohort-context`, `--pricing` or `--since` only
+  with matching reviewed evidence. Run-created latency is a diagnostic proxy.
+- For safety/eligibility review, `inspect_workflows.py` accepts YAML 1.2 normalized
+  to JSON; resolve matrices and reusable workflows separately. `evaluate_validation.py`
+  evaluates reviewed policy and normalized evidence for an exact candidate; it
+  does not authenticate sources or certify the strict percentile/queue contract.
+  See [evidence formats](11-evidence-formats.md).
 
 **Evidence rule:** every number in an audit carries source, time window, sample size, metric definition and limitations. Compare the same workflow, event and runner class; keep fork PRs apart from privileged release builds. A YAML pattern match is a lead, not a finding: a finding needs positive evidence from this repo's runs ([evidence tiers](04-measurement-benchmarking.md#evidence-tiers)).
 
@@ -27,7 +57,8 @@ Script paths below are relative to this skill's directory; from the target repo,
 ### A. Diagnose and prioritize (no modifications)
 
 1. Complete the four-category current/proposed map and policy decision, then reconstruct the DAG; separate queue, setup, steps and critical path. GitHub's jobs API gives timings; the `needs` edges come from YAML. Preserve existing gates while unknowns are resolved.
-2. Fill the seven-module table: `applicable`, `observed bottleneck`, `Δ wall-clock` (on path or below floor), `Δ runner-minutes`, `evidence tier`, `correctness/security risk`, `effort`, `cost delta`, `next proof`.
+2. Screen the seven modules and fill the ranked recommendations table. Name why
+   high-profile but inapplicable options don't fit.
 3. Order by **measured saving in the biggest bucket on the required path**, with correctness first; do not impose a tool-migration order before measurement. [Measurement guide](04-measurement-benchmarking.md).
 4. Run the [pre-publish review](03-security-correctness.md#before-publishing-a-report), then deliver the report and proposed sequence. If scoped implementation is already authorized, continue; otherwise stop before the unapproved action.
 
@@ -55,15 +86,19 @@ Track p50/p95 push→green, queue/setup breakdown, p95 critical path, cache effi
 
 Check the agreed PR budget and category-3 completion/freshness independently. Give full pre-main queue runs unique concurrency groups; post-push coalescing cannot replace them. A failed full run blocks eligibility for that commit; follow the repo's fix-forward/revert policy and incident owner. Missing rollout telemetry pauses promotion.
 
-## Mandatory output contract
+## Output contract
+
+Return the report and only evidence artifacts that apply. The following is a
+suggested private scratch layout; never create placeholder measurements:
 
 ```text
-REPO/.ci-audit/             # in .git/info/exclude
+AUDIT/                      # outside the target worktree
   discovery.json
   validation-plan.md        # four categories, evidence, budget and accepted policy
   current.json              # atomic pointer to latest collection snapshot
   snapshots/<id>/raw/        # immutable provider payloads + hash/completeness manifest
   metrics.json
+  research.md               # dated current/candidate sources, compatibility, price gaps
   validation-policy.json    # reviewed expectations and fingerprinted policy
   validation-evidence.json  # authenticated/verified provider facts, normalized
   validation-result.json    # budget, integration, release and rollout decisions

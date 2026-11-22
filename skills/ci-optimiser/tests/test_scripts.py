@@ -33,7 +33,7 @@ def write(root: Path, rel: str, text: str = "") -> None:
 class DiscoverRepoTest(unittest.TestCase):
     def test_detects_stack_and_never_reads_secrets(self):
         with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
+            root = Path(d).resolve()
             write(root, ".env", f"API_KEY={SENTINEL}")
             write(root, "config/credentials.json", SENTINEL)
             write(root, "node_modules/x/package.json", "{}")
@@ -80,7 +80,7 @@ class DiscoverRepoTest(unittest.TestCase):
         )
         clean = "on:\n  push:\n    branches: [main]\n  pull_request:\njobs: {}\n"
         with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
+            root = Path(d).resolve()
             write(root, ".github/workflows/a.yml", wf)
             write(root, ".github/workflows/b.yml", clean)
             out = discover_repo.discover(root)

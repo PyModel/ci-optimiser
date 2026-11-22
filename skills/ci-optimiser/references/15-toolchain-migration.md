@@ -1,10 +1,9 @@
 # Toolchain migration without lost checks
 
-Reviewed 2026-11-20. Apply these defaults to matching JavaScript/TypeScript
-workloads; do not add a JS toolchain to a Python-only or other unrelated repo.
-Prefer the requested replacement unless measured incompatibility or a faster,
-equally complete candidate justifies an exception. Recheck current releases and
-pin the chosen versions. Vendor benchmarks are not this repository's evidence.
+Reviewed 2026-11-20. These are candidates for matching JavaScript/TypeScript
+workloads, not default migrations. Compare keeping or tuning current tools
+with supported replacements using [live research](16-live-research.md).
+Pin adopted versions. Vendor benchmarks are not this repository's evidence.
 
 ## Contents
 
@@ -31,7 +30,7 @@ claim parity. Separate benchmark repetitions from acceptance checks.
 
 ## Migration matrix
 
-| Existing check | Default candidate | Evidence required before removal |
+| Existing check | Candidate | Evidence required before removal |
 |---|---|---|
 | ESLint | Oxlint, type-aware backend where needed | Effective rules/options/severities, overrides, plugins, ignores and diagnostics; retain only unsupported required rules until replaced. |
 | TypeScript typecheck | `bun check --no-script`; TypeScript 7 fallback | Entire project/reference graph, old-only diagnostics, framework generators and negative fixtures; preserve declaration/build validation separately. |

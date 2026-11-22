@@ -4,6 +4,19 @@ Initial source review: 2026-11-01. Expanded platform, measurement and stack revi
 2026-11-17. Dates below state the review that supports a claim, not a guarantee of
 future compatibility. Re-open sources before quoting a current version or price.
 
+## Provider configuration sources (2026-11-22)
+
+| Provider | Configuration topics | Primary source |
+|---|---|---|
+| GitHub Actions | Workflow events, jobs, cache policy and reusable calls | https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax |
+| GitLab CI | Pipeline/job keywords, includes, dependencies and cache policy | https://docs.gitlab.com/ci/yaml/ |
+| CircleCI | Workflow filters, job dependencies, executors and caches | https://circleci.com/docs/reference/configuration-reference/ |
+| Buildkite | Step types, dependencies, queues and dynamically uploaded steps | https://buildkite.com/docs/pipelines/configure/defining-steps |
+| Azure Pipelines | Trigger, stage, job, pool and template schema | https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/?view=azure-pipelines |
+| Jenkins | Jenkinsfile syntax, agents, triggers and parallel stages | https://www.jenkins.io/doc/book/pipeline/syntax/ |
+
+Use the sources below for relevant GitHub and stack details.
+
 | Topic | Fact relied on | URL |
 |---|---|---|
 | Bun type checker | `bun check` added in 1.4.3; `bun check --no-script` always runs the checker and accepts its flags; needs `@types/bun`; follows TS 7.1 since 1.4.4 | https://bun.com/docs/runtime/check · https://bun.com/blog/bun-v1.4.4 · https://bun.com/blog/bun-v1.4.3 |
