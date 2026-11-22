@@ -170,3 +170,31 @@ is a provider SLA. Current tool support is conditional on repository parity test
 | Built-in token | Workflow permissions expose Actions/content reads, not repository administration | https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions |
 | Protection evidence | Classic required status-check protection requires Administration read access | https://docs.github.com/en/rest/branches/branch-protection#get-status-checks-protection |
 | Report artifact | Upload action v7.0.2 pinned to cf430e030ddbb5b0abf93d22962f4752f3646cd9; explicit paths and one-day retention | https://github.com/actions/upload-artifact/tree/cf430e030ddbb5b0abf93d22962f4752f3646cd9 |
+
+## Agent evidence boundaries (2026-11-20)
+
+| Topic | Fact relied on | URL |
+|---|---|---|
+| External instructions | Logs, PRs, source comments and fetched documents can contain indirect prompt injection; their content is evidence, not additional authority to run commands or change policy | https://cheatsheetseries.owasp.org/cheatsheets/Secure_Coding_with_AI_Cheat_Sheet.html |
+| Agent evaluation | Repeatable adversarial cases, tool/permission identity and retained decision evidence support review; a structural ledger check is not proof of safe behavior | https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html |
+
+## Cache layers and controlled experiments (2026-11-20)
+
+| Topic | Fact relied on | URL |
+|---|---|---|
+| setup-go cache layers | At the reviewed source revision, built-in caching restores the Go module/build archive; `cache: false` disables that archive lifecycle without disabling independent toolchain lookup | https://github.com/actions/setup-go/tree/d8cbb8045d7f43706b9177cceb36c1f91a6644d5 |
+| Warm runner snapshots | A vendor-described warm disk can coexist with an action archive; state and transfer origin must be measured on the target | https://docs.zode.dev/ci/warm-snapshots |
+| Helm example evidence limit | Zode reports setup-go at 35 s cold and 67–107 s warm; without raw identities, sample counts and controlled states this is an investigation lead, not a causal estimate or repository benchmark | https://docs.zode.dev/ci/benchmark |
+| Blocking and randomization | Hold controlled nuisance factors fixed within blocks and randomize remaining effects; randomized order alone does not establish equal starting cache state | https://www.itl.nist.gov/div898/handbook/pri/section3/pri332.htm |
+
+The historical Helm example does not establish which current setup-go version ran,
+whether a second archive came from public storage or a runner-local backend, or
+whether disabling it improves the required CI path. Preserve those unknowns.
+
+## PR approval-only attempt evidence (2026-11-20)
+
+| Topic | Fact relied on | URL |
+|---|---|---|
+| Exact attempt metadata | A read-only endpoint identifies one workflow run attempt; Actions read permissions suffice for authenticated access | https://docs.github.com/en/rest/actions/workflow-runs#get-a-workflow-run-attempt |
+| Exact attempt jobs | Job inventories can be scoped to one attempt and include a total count; a nonzero or incomplete inventory is not zero execution | https://docs.github.com/en/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run-attempt |
+| Observed approval hold | Run 44781673275 attempt 1 was completed/action_required with total_count 0 and no jobs; its approval resumed provider attempt 2. The later failed execution remains a failure | https://api.github.com/repos/PyModel/ci-optimiser/actions/runs/44781673275/attempts/1 · https://api.github.com/repos/PyModel/ci-optimiser/actions/runs/44781673275/attempts/1/jobs?per_page=100 · https://api.github.com/repos/PyModel/ci-optimiser/actions/runs/44781673275/attempts/2 |

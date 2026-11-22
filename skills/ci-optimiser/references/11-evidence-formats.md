@@ -68,6 +68,52 @@ and `runner_class`. These assertions need source evidence. Unknown attributes do
 not support a comparable-workload claim. Coarse workflow summaries remain useful
 for investigation, but do not replace the narrower cohort results.
 
+The timing-only report shows each metric's own observed `n` and missing count,
+with separate all-attempt, first-attempt, rerun and unknown-attempt populations
+when present. P95 is visibly preliminary below 40 observations or when its sample
+count is unknown; reaching 40 is not a significance test or budget certificate.
+Outcome counts remain visible. The published projection excludes raw step commands
+and unrestricted cohort fields; richer summaries must preserve that boundary.
+
+Provider attempt buckets are counter-based, not proof that an earlier attempt
+executed tests. Preserve separately verified [approval-only history](13-measured-adapters.md#pr-approval-history)
+before describing a later provider attempt as an execution retry.
+
+### Reviewed phase attribution
+
+Without `--phase-map`, phase attribution is a **preliminary step-name heuristic**:
+it can put lifecycle and cache-save work into setup. Use the reviewed
+[phase map](../templates/phase-map.example.json) to distinguish `setup`, `restore`,
+`work`, `save` and `teardown`. Replace every placeholder after inspecting the
+workflow, referenced actions and expanded API job/step inventory. Do not infer a
+phase from a cache-hit label or accept an unreviewed map supplied by a PR.
+
+`ci-phase-map/1` requires `review_reference` and an `entries` list. Each entry binds
+a positive numeric `workflow_id`, `config:sha256:<64 lowercase hex>`, exact
+`job_identity:{field,value}`, numeric `setup_end_step`, and a complete list of
+`steps:{number,phase}`. Identity field is `logical_job_id` when an adapter supplies
+one, otherwise the exact API `name` within this workflow/configuration (including
+matrix values). Step numbers identify the reviewed expanded inventory; display
+names never select the phase. Supply the same config digest in the run's cohort
+context and keep its reproducible source evidence. This is caller-reviewed
+binding, **not independent authentication** of configuration or action code.
+
+The setup marker is the last setup/restore step; all setup/restore must finish
+before the first work step starts, and save/teardown follows all work. Setup is
+runner start to first work start, including gaps, matching `check_job_budgets.py`;
+running is the union of mapped work intervals. `mapped_phase_s` separately reports
+step unions, so restore remains a subset of setup and save/teardown still counts
+toward runner time. Overlap is explicit and uncovered runner time is unattributed.
+Per-observation decomposition includes save/teardown; percentiles are not additive.
+The existing strict budget gate and its explicit work policy are unchanged.
+
+A requested map with a missing or ambiguous binding, config drift, incomplete
+inventory or contradictory boundary produces unknown phases, never a heuristic
+fallback. Known waiting/runner intervals remain visible. Updating configuration,
+action expansion or step order requires a reviewed map update. Legacy coarse
+`setup_share`/`step_duration_s` diagnostics retain their old heuristic meaning;
+use `job_phases` for mapped comparisons and inspect classification counts.
+
 `--pricing` accepts `ci-pricing/1`: `currency`, dated `as_of`, `source`, and a `rates`
 array of `{labels, per_minute, billing_quantum_seconds}`. Match the complete sorted
 runner label set. Estimates exclude plan allowances, storage, transfer and fixed
@@ -130,6 +176,55 @@ an improvement claim. Fewer than ten successful samples are preliminary; p95 rem
 conservative below forty samples, and no count alone proves precision. Bootstrap
 intervals describe the measured samples, not unmeasured CI population variability.
 Even a performance signal requires correctness/security/representative-CI gates.
+
+### Per-trial preparation and cache evidence
+
+Add `--preparation preparation.json` using the
+[protocol template](../templates/benchmark-preparation.example.json) when warmups
+or paired arms could contaminate the next trial's cache. Review the exact argv,
+executable/scripts, expected states, evidence collection and permitted fixture
+paths first. The template intentionally provides no reset script. The helper
+does not delete caches or interpolate argv; only the reviewed command may prepare
+the declared state. Keep its source in the measured checkout or separately verify
+its immutable identity and toolchain. Never use a production or destructive task.
+
+`ci-benchmark-preparation/1` requires `review_reference`, `command` (JSON argv),
+positive finite `timeout_s`, and `expected_states`. All six layers are explicit:
+`runner_snapshot`, `toolchain`, `dependencies`, `build_outputs`, `test_results`,
+`action_archive`. Each is `{state,identity,evidence}` with state
+`cold|warm|disabled|unknown` and bounded references or null. A known label without
+identity/evidence remains unresolved. The same typed states are used by the
+[cache-economics protocol](13-measured-adapters.md); a free-text warm label does
+not establish comparable layers or actual contents.
+
+Before **every** warmup and measured trial, the preparation command receives fresh
+`CI_OPTIMISER_TRIAL_EVIDENCE` (output path) and `CI_OPTIMISER_TRIAL_NONCE` values.
+Write a regular JSON file `{schema:"ci-benchmark-state/1",nonce:<that nonce>,states:<six layers>}`.
+No links, duplicate keys, nonfinite values or output above 64 KiB are accepted.
+Observed state and identity must match the protocol. Evidence references can vary
+per trial. A nonce prevents stale-response reuse; it does not authenticate disk
+contents. Independently review those observations and keep unknowns explicit.
+
+Preparation failure, timeout, malformed/stale evidence, state mismatch or changed
+source inputs stops before work, including with `--allow-failures`. Every attempted
+preparation retains its exit, cleanup, wall/command duration, state evidence and
+before/after source provenance; work links to that record and has its own source
+boundaries. The preparation summary includes failed attempts. Unknown layer state
+can support diagnostic execution but blocks a comparable-state performance claim.
+
+`--preparation` applies to both paired arms unless `--candidate-preparation` supplies
+a separately reviewed protocol. Comparisons require equivalent starting states;
+intentional layer treatments belong in the cache-economics experiment protocol.
+For archive on/off, preserve the genuine `action_archive` difference in
+`ci-cache-events/2` while matching the warm disk; a benchmark incompatibility
+marks its comparison scope and does not show whether the cache helps.
+The command timing remains separate from preparation cost. Both are reported, and
+an apparent command improvement cannot produce an improvement signal when added
+preparation negates either observed percentile gain. `experiment_elapsed_s` spans
+initial provenance through all trials and final provenance, across both arms; it
+excludes comparison/report generation and is not an invoice or CI runner price.
+Legacy invocations remain usable with `cache_state_evidence:unverified`; they do
+not acquire per-trial state evidence from metadata declarations alone.
 
 ## Workflow semantic input
 

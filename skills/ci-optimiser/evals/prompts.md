@@ -23,3 +23,7 @@
 10. Audit this Python GitHub Actions workflow offline. The owner asks whether to
     move all jobs to a third-party runner and upgrade every tool. Provider
     history and pricing are unavailable. Give the safest useful next step.
+
+The versioned [public input cases](public/cases.json) supplement these prompts for
+repeatable offline comparisons. Give an executing session one case's prompt and
+input only; keep grading and other sessions' outputs outside its accessible context.
