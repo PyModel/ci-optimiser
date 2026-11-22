@@ -21,10 +21,11 @@ repo evidence to search tools or defaulting to a vendor migration.
 
 Before tuning runners, it designs four validation categories from the repository's
 actual commands and policy: **code rules**, **change correctness**, **integrated main**,
-and **release readiness**. Its default targets are PR p50 <120 seconds and p95 <180
-seconds. The full suite runs in a merge queue before main; selection narrows PR
-feedback only. It rejects retries, skipped tests and weaker checks as optimizations,
-and ties releases to verified commits and artifacts.
+and **release readiness**. The default targets for first-execution PR feedback on
+the latest revision are p50 <60 seconds and p95 <120 seconds. Keep the full suite
+in the merge queue before merging to main; selection narrows PR feedback only
+and does not remove existing checks. The skill rejects retries, skipped tests and
+weaker checks as optimizations, and ties releases to verified commits and artifacts.
 For services it evaluates feature gates and progressive rollouts; for libraries and
 other products it uses the appropriate compatibility, packaging and staging gates.
 Detection produces evidence for agent review, not permission to remove checks.
