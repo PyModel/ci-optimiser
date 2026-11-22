@@ -21,10 +21,11 @@ repo evidence to search tools or defaulting to a vendor migration.
 
 Before tuning runners, it designs four validation categories from the repository's
 actual commands and policy: **code rules**, **change correctness**, **integrated main**,
-and **release readiness**. Its default targets are PR p50 <120 seconds and p95 <180
-seconds. The full suite runs in a merge queue before main; selection narrows PR
-feedback only. It rejects retries, skipped tests and weaker checks as optimizations,
-and ties releases to verified commits and artifacts.
+and **release readiness**. The default targets for first-execution PR feedback on
+the latest revision are p50 <60 seconds and p95 <120 seconds. Keep the full suite
+in the merge queue before merging to main; selection narrows PR feedback only
+and does not remove existing checks. The skill rejects retries, skipped tests and
+weaker checks as optimizations, and ties releases to verified commits and artifacts.
 For services it evaluates feature gates and progressive rollouts; for libraries and
 other products it uses the appropriate compatibility, packaging and staging gates.
 Detection produces evidence for agent review, not permission to remove checks.
@@ -37,6 +38,33 @@ In an owner-reported test of `ci-optimiser`, CI elapsed time fell from **30–40
 minutes to under 13 minutes** across Go, Android, web E2E, and simulator checks,
 with no reported loss of verification quality. This is one project's result,
 not a benchmark or a speed guarantee.
+
+## Reported CI results: before and after
+
+These figures come from a supplied screenshot. The project, timing window, and
+whether the checks were equivalent were not established. The figures are not
+independently verified and are not a speed guarantee.
+
+![Reported CI times before and after; exact values in the table below.](assets/ci-results-before-after.svg)
+
+<details>
+<summary>View the reported CI results as a text table</summary>
+
+| Metric | Before | After |
+|---|---|---|
+| Full CI run, median | 9 min 21 s | 1 min 30 s |
+| Full CI run, slow runs (p95) | 20 min 1 s | 1 min 34 s |
+| End-to-end tests | 6 min 48 s | 42 s |
+| Backend tests | 5 min 58 s | 28 s |
+| Frontend tests | 4 min 19 s | 33 s |
+| Lint | ~30 s | 0.7 s |
+| Typecheck | ~12 s | 0.3 s |
+| Format check | 7 s | 0.09 s |
+| Dependency install | ~30 s | 2 s |
+| Retries for flaky tests | yes | none |
+| Speedup | — | 6× median, 13× p95 |
+
+</details>
 
 ## Contents
 

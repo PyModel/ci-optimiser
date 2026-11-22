@@ -1,9 +1,11 @@
 # Toolchain migration without lost checks
 
-Reviewed 2026-11-20. These are candidates for matching JavaScript/TypeScript
-workloads, not default migrations. Compare keeping or tuning current tools
-with supported replacements using [live research](16-live-research.md).
-Pin adopted versions. Vendor benchmarks are not this repository's evidence.
+Reviewed 2026-11-22. When a measured JavaScript/TypeScript bottleneck warrants a
+replacement, prefer the verified Bun and TypeScript 7 candidates below over a
+broader migration. Compare the incumbent and the smallest tune first. Prefer
+stable pins; use an exact canary only when a needed feature has no suitable
+stable path and the exact build passes parity. Verify with
+[live research](16-live-research.md); vendor benchmarks are not repo evidence.
 
 ## Contents
 
@@ -12,6 +14,7 @@ Pin adopted versions. Vendor benchmarks are not this repository's evidence.
 - [Type checking and local checks](#type-checking-and-local-checks)
 - [Lint and format coverage](#lint-and-format-coverage)
 - [Installs and restored dependencies](#installs-and-restored-dependencies)
+- [Bun test compatibility](#bun-test-compatibility)
 - [Vitest reuse and scheduling](#vitest-reuse-and-scheduling)
 - [Reviewed sources](#reviewed-sources)
 
@@ -23,8 +26,9 @@ inventory, diagnostics, exit status, elapsed time, peak memory and cache state.
 Add representative known-bad fixtures, including framework/custom rules and
 reverse dependents; two green runs alone do not establish equivalent detection.
 List every old-only diagnostic and excluded file with its disposition. Preserve
-the old required check until every material loss is fixed or equivalently covered.
-Keep one small change per PR with linked real before/after runs. Never rerun a
+or grow rules and required checks; keep the old tool or a scoped fallback until
+every required detection is covered at the same boundary. Keep one small,
+authorized change per PR with linked real before/after runs. Never rerun a
 failure to replace its result, weaken options, extend timeouts, or skip tests to
 claim parity. Separate benchmark repetitions from acceptance checks.
 
@@ -32,12 +36,13 @@ claim parity. Separate benchmark repetitions from acceptance checks.
 
 | Existing check | Candidate | Evidence required before removal |
 |---|---|---|
-| ESLint | Oxlint, type-aware backend where needed | Effective rules/options/severities, overrides, plugins, ignores and diagnostics; retain only unsupported required rules until replaced. |
+| ESLint | Verified `bun lint --no-script`, or standalone pinned Oxlint | Effective rules/options/severities, overrides, plugins, ignores and diagnostics; retain unsupported required rules until replaced. |
 | TypeScript typecheck | `bun check --no-script`; TypeScript 7 fallback | Entire project/reference graph, old-only diagnostics, framework generators and negative fixtures; preserve declaration/build validation separately. |
 | Local typecheck | Pinned `tsrs --noEmit --fast` | Compare with the authoritative CI compiler on the actual graph and representative errors; document conformance gaps and retain the necessary fallback. |
-| Prettier | Oxfmt npm package | Full format inventory, supported plugins/options and reviewed output differences; verify files the standalone binary would omit. |
+| Prettier | Verified `bun fmt --no-script --check`, or Oxfmt npm package | Full format inventory, supported plugins/options and reviewed output differences; verify files the standalone binary would omit. |
 | npm/yarn/pnpm install and scripts | Bun, committed `bun.lock`, frozen install | Workspace/peer/patch resolution, lifecycle scripts, native/generated outputs, production runtime and script behavior. |
 | Isolated Vitest files | Measured `isolate: false` candidate | Same full inventory, executable cleanup, randomized file/test order, stable coverage and no leaked workers/resources. |
+| Vitest execution | Verified `bun test`, retaining `vitest` imports where supported | Runtime, declaration and config compatibility, fixtures and hooks, exact tests, failed assertions, reports and coverage. |
 
 ## Type checking and local checks
 
@@ -70,13 +75,18 @@ differs from the ordinary required checker. Check TS5-to-TS7 defaults, explicit
 without loosening the established checking contract. tsrs conformance is a
 measured condition, not a claim inferred from its name or speed.
 
-Install a real pre-push hook and measure its complete wall time against 9 seconds.
-Format/lint changed files, but typecheck their affected projects and reverse
-dependents with the actual tsconfig graph. Checking only a changed file and its
-imports can miss broken consumers. Treat the hook as fast feedback; preserve CI
-and full merge-queue validation even if hooks are bypassed.
+Follow [local enforcement](14-two-minute-ci.md#local-enforcement). Format/lint
+changed files, but typecheck affected projects and reverse dependents with the
+actual tsconfig graph. Checking only a changed file and its imports can miss
+broken consumers.
 
 ## Lint and format coverage
+
+The [1.4.4-tagged Bun docs](06-official-sources.md#strict-profile-tool-checks-2026-11-22)
+put built-in lint on canary only. Moving docs describe `.oxlintrc.json` and
+`--no-script`; they do not prove the stable pin supports the command. Check the
+exact binary and effective rules before trying it. Use stable standalone Oxlint
+or the incumbent if an exact canary is not justified.
 
 Export ESLint's effective configuration before migration. Use Oxlint's migration
 tool for supported flat configs, and review custom local plugins manually. Enable
@@ -91,7 +101,10 @@ lint ignores. Keep a whole-project checker; do not infer equivalent coverage fro
 a combined green result. Compare both `tsrs` and `oxlint-tsgolint` when relevant;
 installing tsrs can change the backend automatically, so pin and record it.
 
-Migrate Prettier options/ignores explicitly and review formatting changes.
+Prefer `bun fmt --no-script --check` in CI once the exact pin proves built-in
+dispatch and nonwriting checks even with a `fmt` package script present. Verify
+exit status, file inventory and options; keep the current formatter if parity is
+unproven. Migrate Prettier options/ignores explicitly and review formatting changes.
 Oxfmt's default print width differs, arbitrary Prettier plugins are unsupported,
 and not every configuration source/option transfers. Use its npm distribution
 when required formats use bundled Prettier: the standalone release binary skips
@@ -115,7 +128,23 @@ A frozen Bun install does not rerun lifecycle scripts for packages already in
 restored `node_modules`. Invalidate or explicitly rebuild when native ABI,
 generation, patch or trust inputs change; verify expected generated/native outputs.
 Measure exact usable PR hits separately from fallback hits, misses, failed restores
-and unknowns. Do not improve a 95% hit metric by accepting stale dependency state.
+and unknowns. Do not raise the hit rate by accepting stale dependency state.
+
+## Bun test compatibility
+
+Try `bun test` on the exact pin and real project only when a test-runner change
+fits the measured bottleneck. Current docs describe `vitest` imports and
+`--isolate=modules`; the 1.4.4-tagged test docs do not establish either. Treat
+support, runtime behavior and coverage as unknown until the pinned executable and
+target project prove them. Do not rewrite imports or remove Vitest to force adoption.
+
+Compare project config, plugins, environments, global/setup hooks, declaration
+types, fixture injection, mocks, assertions, test IDs and reports/coverage. In the
+documented compatibility mode, `inject` cannot supply Vitest global setup values
+and some assertions need `chai` at runtime. Keep those dependencies and any needed
+Vitest lanes until parity. Where the pin supports `bun test --randomize --seed N`,
+record each seed and prove per-file cleanup; keep isolation where required. Do not
+widen timeouts or retry to pass the comparison.
 
 ## Vitest reuse and scheduling
 
@@ -141,19 +170,17 @@ Record random seeds and use shuffled files/tests to detect ordering dependencies
 ./node_modules/.bin/vitest run --sequence.shuffle --sequence.seed=12345
 ```
 
-Vary and record seeds on subsequent first-attempt runs; reproduce a failing seed
-for diagnosis without erasing its failure. Inventory-preserving duration-balanced
-shards come before within-shard shuffling, which trades away longest-first order.
-Start with measured 8-core candidates and buy cores before adding shards when the
-measurements support it. Cap workers against effective CPU/memory and reserve
-resources for databases/builds; test lower counts rather than assuming more wins.
-Give each shard its own database and partition shared data per worker/transaction
-inside a shard. Count service startup and teardown in the budget. Verify the union
-of shard results and merged coverage before the required check can pass.
+Vary and record seeds; reproduce a failing seed for diagnosis without erasing it.
+Probe files alone and retain results for at least three recorded shuffled full-suite
+runs with unchanged inventory and coverage; compare flakes over 20+ runs before
+retiring isolation. Duration balance comes before within-shard shuffling, which
+trades away longest-first order. Apply the
+[worker and shard contract](14-two-minute-ci.md#parallel-work-and-test-reuse).
 
 ## Reviewed sources
 
-Rechecked 2026-11-20; see the dated [source index](06-official-sources.md).
+See the dated [source index](06-official-sources.md), including the
+[2026-11-22 Bun checks](06-official-sources.md#strict-profile-tool-checks-2026-11-22).
 
 - Bun: [checker](https://bun.sh/docs/runtime/check), [install](https://bun.com/docs/pm/cli/install), [lifecycle](https://bun.com/docs/pm/lifecycle).
 - TypeScript: [native-port migration](https://github.com/microsoft/TypeScript-go), [current compiler](https://github.com/microsoft/TypeScript).

@@ -4,14 +4,16 @@
 
 | Metric | Definition | Source |
 |---|---|---|
-| push→green | verified event receipt → authoritative required-check completion for the exact current revision | compute from expected checks and raw events/attempts; analyzer output is a diagnostic proxy, not required-check aware |
-| queue | job `started_at − created_at` | jobs API |
+| first-execution PR feedback | exact revision receipt → first trustworthy authoritative success or failure; separate outcome cohorts | match the actual checks and attempts using the [PR feedback clock](08-validation-architecture.md#pr-feedback-budget) |
+| first-push PR journey | first push in the PR window → first trustworthy current-revision green; includes repair/re-push delays | exact push and check evidence; analyzer `push_to_green_s` is only a diagnostic proxy |
+| runner wait | eligible for a runner → job start | verified readiness and start; `started_at − created_at` is a proxy, not proof of isolated runner wait |
 | setup | measured job-start-to-first-work boundary; separately attribute restore, save and teardown costs | reviewed phase map/boundaries where available; step-name inference is preliminary |
 | execution | elapsed execution excluding non-overlapping setup coverage; retain summed step work separately | jobs/step interval evidence |
+| runner elapsed | job start → job completion, including save, teardown and gaps | jobs API or equivalent; identify the slowest required job, not necessarily the critical path |
 | critical path | longest chain through the resolved dependency DAG to required terminals | reviewed normalized graph + job timings; counterfactual recomputation |
 | suspected retry recovery | observed same-run failure followed by success; not proven flakiness | actual attempt history; inspect logs and intentional reruns |
 | cache restoration rate | known successful restores / known restore outcomes; fallback and exact hits remain distinct | explicit per-event restore evidence; neither cache inventory nor a log phrase proves complete coverage |
-| exact-key PR hit rate | exact primary-key hits / all eligible PR restore opportunities in the declared complete population | preserve numerator, denominator, exclusions, unknowns and population identity; missing evidence cannot satisfy >95% |
+| exact-key PR hit rate | exact primary-key hits / all eligible PR restore opportunities in the declared complete, nonempty population | preserve numerator, denominator, exclusions, unknowns and population identity; missing evidence cannot satisfy the target |
 | cost per merge | accounted runner cost / merged PRs for the same complete population | dated explicit label/rate/quantum + population identity; observed-minute estimates are not bills |
 
 Unknown stays `unknown`. A report that writes `0` for a missing cache hit rate is wrong.
@@ -31,7 +33,7 @@ bounds; it does not retrieve or cryptographically verify attestations. See
 
 ## Baseline procedure
 
-1. `collect_gh.py --limit 150 --include-incomplete --retries 0` (filter `--event pull_request --target-branch main` for PRs, `--event push --branch main` for main). Add `--include-incomplete` to retain waiting/running states. Split capped date windows explicitly; partial evidence stays partial.
+1. `collect_gh.py --limit 150 --include-incomplete --retries 0` (filter `--event pull_request --target-branch main` for PRs, `--event push --branch main` for main). Split capped date windows explicitly; partial evidence stays partial.
 2. `analyze_gh.py`, then inspect job/step distributions, interval-union setup, shard skew, actual attempt history and cohort results. `last_finishing_job` and the runner-up gap are investigative leads; name-only required matches are explicitly weak.
 3. Resolve YAML/matrices/reusable definitions into `ci-job-graph/1`; pass `--graph` for longest-required-path and counterfactual analysis. Write the evidence and assumptions in `critical-path.md`.
 4. Note the window, sample sizes and counts of failed, cancelled, skipped, waiting and unfinished observations. Do not hide slow failures by reporting only successful duration statistics.
@@ -41,7 +43,7 @@ Compare like with like: same workflow, event and runner class. Never mix fork PR
 
 ## Sizing and combining savings
 
-Size every candidate on two axes: **Δ wall-clock** (p50 and p95 of push→green or of the required path) and **Δ runner-minutes** (bill and capacity). They are different wins; report both and rank speed work by the first.
+Size every candidate on two axes: **Δ wall-clock** (p50 and p95 of first-execution PR feedback or of the required path) and **Δ runner-minutes** (usage and capacity). They are different wins; report both and rank speed work by the first. Price billable usage separately.
 
 - **Dependency rule.** Recompute the longest required path after each change. A 300-second build feeding a 5-second test becomes a 205-second path when the build is reduced by 100 seconds, even though the build was not last to finish. `gap_to_runner_up_s` is only an observation; it bounds an isolated improvement only for independent competing terminal branches with unchanged scheduling. Aggregate jobs and shared ancestors invalidate a universal finish-gap rule.
 - **Non-additive.** Per-change wall-clock deltas do not add. Two fixes on the same pole overlap; a fix below the floor counts only once the jobs above it also drop. Two near-equal concurrent jobs (300 s and 299 s) each save about nothing alone and 100 s together. Derive the combined figure from a stacked model (re-compute the path with all changes applied), never by summing. Runner-minute deltas do add, since they remove disjoint step time.
@@ -92,11 +94,11 @@ For a change measured on real CI rather than with `benchmark.py`:
 
 ## Monitoring and rollback
 
-Use the [PR feedback budget](08-validation-architecture.md#pr-feedback-budget) when
-designing the four-category pipeline. Record target and observations separately;
-the strict p50 <120-second / p95 <180-second objectives cover latest-revision end-to-end PR feedback,
-not just test execution. Keep first-push journey, completed-run breaches, failed or
-unfinished observations and sample uncertainty visible. Enforced stage/job budget breaches fail and open an investigation; no runtime limit may certify unfinished work.
+Use the [strict targets](14-two-minute-ci.md#acceptance-and-audit) when designing
+the four-category pipeline. Record targets and observations separately. Keep
+first-push journey, completed-run breaches, failed or unfinished observations and
+sample uncertainty visible. A proven, enforced stage/job bound fails at equality
+or above and opens an investigation; no runtime limit may certify unfinished work.
 For redistribution, also track full-suite lag, last eligible green age, queue depth,
 starvation and total runner time across all categories. Preserve accepted protection
 when the budget cannot yet be met.
@@ -120,11 +122,8 @@ check completion; missing attempt and policy evidence remains unknown.
 
 ## Strict contract boundaries
 
-`evaluate_validation.py` evaluates supplied legacy policy assertions. It does not
-verify provider queue configuration/admission, merge_group execution, full test
-inventory or fresh test execution. Its scalar feedback threshold accepts equality
-and has no p50 test, so it does not certify the strict p50 <120 s / p95 <180 s
-contract. A result called pass is limited to those assertions; use explicit stage
-budgets and separately reviewed provider/percentile evidence for the strict policy.
+The [legacy evaluator](11-evidence-formats.md#four-category-policy) does not certify
+strict feedback or fresh queue admission. Use independently reviewed evidence for
+stage bounds, percentile objectives and the actual admission decision.
 
 Planned repeated trials retain every outcome; never rerun a failed check to replace red.
