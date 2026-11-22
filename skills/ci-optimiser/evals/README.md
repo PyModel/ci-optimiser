@@ -4,7 +4,8 @@ Compare the exact candidate skill tree with a fixed baseline before replacing th
 core skill or changing a gate recommendation. The [existing prompts](prompts.md)
 cover broad CI decisions; the versioned [public cases](public/cases.json) add cache
 layers, incomplete economics, exact versus fallback hits, hidden saves, acceptance
-retries, planned trials, and paired ordinary/instruction-bearing logs.
+retries, planned trials, paired ordinary/instruction-bearing logs, and release
+provider fit, squash inputs, bot approval holds, and draft eligibility.
 
 ## Run and grade separately
 

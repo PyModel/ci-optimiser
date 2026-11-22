@@ -198,3 +198,16 @@ whether disabling it improves the required CI path. Preserve those unknowns.
 | Exact attempt metadata | A read-only endpoint identifies one workflow run attempt; Actions read permissions suffice for authenticated access | https://docs.github.com/en/rest/actions/workflow-runs#get-a-workflow-run-attempt |
 | Exact attempt jobs | Job inventories can be scoped to one attempt and include a total count; a nonzero or incomplete inventory is not zero execution | https://docs.github.com/en/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run-attempt |
 | Observed approval hold | Run 44781673275 attempt 1 was completed/action_required with total_count 0 and no jobs; its approval resumed provider attempt 2. The later failed execution remains a failure | https://api.github.com/repos/PyModel/ci-optimiser/actions/runs/44781673275/attempts/1 · https://api.github.com/repos/PyModel/ci-optimiser/actions/runs/44781673275/attempts/1/jobs?per_page=100 · https://api.github.com/repos/PyModel/ci-optimiser/actions/runs/44781673275/attempts/2 |
+
+## Release automation (2026-11-22)
+
+| Topic | Fact relied on | URL |
+|---|---|---|
+| Release Please action | Upstream listed v5.0.0 as latest; it uses Node 24 and bundles Release Please 17.6.0. Confirm target runner compatibility and action pin before recommending adoption. | https://github.com/googleapis/release-please-action/releases/latest · https://github.com/googleapis/release-please-action/blob/v5.0.0/action.yml |
+| Release PR and recovery | Conventional Commits drive proposals; `BEGIN_COMMIT_OVERRIDE` in the merged PR is supported for squash recovery on a later run. | https://github.com/googleapis/release-please/blob/v17.6.0/README.md |
+| Package/version topology | Manifest config maps package paths and versions; check prior tags and strategy before bootstrapping. | https://github.com/googleapis/release-please/blob/v17.6.0/docs/manifest-releaser.md |
+| Bot permissions and events | Current GitHub.com documentation covers approval-required built-in-token PR runs, event suppression, and installation-token alternatives. Use provider behavior, not the action README's blanket warning, on this platform. | https://docs.github.com/en/actions/concepts/security/github_token · https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows |
+| Trust and publishing evidence | Pin actions to full SHAs, scope token permissions and keep privileged workflows away from untrusted inputs; artifact attestations bind provenance to source and build identity. | https://docs.github.com/en/actions/reference/security/secure-use · https://docs.github.com/en/actions/concepts/security/artifact-attestations |
+
+Not confirmed for an arbitrary target: release eligibility, token and approval
+settings, runner compatibility, registry support, or any publication timing or cost.

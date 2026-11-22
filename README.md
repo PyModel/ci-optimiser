@@ -43,6 +43,7 @@ not a benchmark or a speed guarantee.
 - [SKILL.md](skills/ci-optimiser/SKILL.md): the procedure agents follow.
 - [Strict performance contract](skills/ci-optimiser/references/14-two-minute-ci.md): exact budgets, full queue execution, honest measurements, activation blockers and cost.
 - [Live research](skills/ci-optimiser/references/16-live-research.md): compatible releases, optimization candidates, prices and unknowns.
+- [Release automation review](skills/ci-optimiser/references/17-release-automation.md): when to recommend Release Please, preserve release CI, or debug a stalled release. See the [release glossary](GLOSSARY.md) for state definitions.
 - [JS/TS migration](skills/ci-optimiser/references/15-toolchain-migration.md): Bun, Oxlint, Oxfmt, TypeScript 7, tsrs and Vitest parity requirements.
 - [references/](skills/ci-optimiser/references/): discovery matrix, playbook, safety rules, measurement, examples, dated sources, config recipes and [four-category validation architecture](skills/ci-optimiser/references/08-validation-architecture.md).
 - [templates/](skills/ci-optimiser/templates/): audit report, optimization PR, paste-ready brief for agents without the skill.

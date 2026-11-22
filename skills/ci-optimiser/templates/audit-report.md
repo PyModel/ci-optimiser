@@ -92,6 +92,11 @@ Recompute total runner minutes separately; don't double-count shared work.
 
 ## Evidence identity and release eligibility
 
+When relevant, use the [release automation review](../references/17-release-automation.md):
+record KEEP / ADOPT / FIX / NOT APPLICABLE, observed release state, recommended
+workflow, dated sources, exact approval boundaries, evidence gaps, verification,
+rollback, and one next action.
+
 - Source identities: <PR/base/candidate/final-main SHAs and verified mapping; rerun if equivalence is unproven>.
 - Workload and policy fingerprint: <commands/test IDs/coverage/graph/workflow/toolchain/build inputs; no secrets>.
 - Artifact: <immutable digest, exact build source, provenance, required evidence links and expiry>.
