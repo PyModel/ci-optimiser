@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="394" viewBox="0 0 800 394" role="img" aria-labelledby="title desc">
+  <title id="title">CI case study: 30–40 minutes to under 13 minutes</title>
+  <desc id="desc">Owner-reported CI elapsed time for Go, Android, web end-to-end and simulator checks. Before: 30 to 40 minutes, with the range hatched. After: under 13 minutes, shown at its upper bound. The owner reported no loss of verification quality.</desc>
+  <defs>
+    <pattern id="range" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="#3a5067"/>
+      <path d="M-2 2 2-2M0 8 8 0m-2 10 4-4" stroke="#8ca2b8" stroke-width="1.5"/>
+    </pattern>
+  </defs>
+  <rect x="0.5" y="0.5" width="799" height="393" rx="19" fill="#111b2a" stroke="#35455a"/>
+  <g font-family="system-ui, -apple-system, sans-serif">
+    <text x="44" y="44" fill="#91efbb" font-size="16" font-weight="700" letter-spacing="2">CI CASE STUDY</text>
+    <text x="44" y="92" fill="#f1f5f9" font-size="39" font-weight="700" letter-spacing="-1">Faster CI, checks intact</text>
+
+    <g font-size="21" font-weight="600">
+      <text x="44" y="145" fill="#c9d5e3">Before</text>
+      <text x="752" y="145" text-anchor="end" fill="#f1f5f9">30–40 min</text>
+      <text x="44" y="218" fill="#c9d5e3">After</text>
+      <text x="752" y="218" text-anchor="end" fill="#91efbb">Under 13 min</text>
+    </g>
+    <path d="M44 159h708v24H44zm0 73h708v24H44z" fill="#233247"/>
+    <path d="M44 159h531v24H44z" fill="#9fb1c4"/>
+    <path d="M575 159h177v24H575z" fill="url(#range)"/>
+    <path d="M44 232h230.1v24H44z" fill="#91efbb"/>
+    <path d="M274.1 230v28" stroke="#f1f5f9" stroke-width="2" stroke-dasharray="3 3"/>
+
+    <path d="M44 273h708M44 273v6m177-6v6m177-6v6m177-6v6m177-6v6" fill="none" stroke="#657991"/>
+    <g text-anchor="middle" fill="#aebed0" font-size="15">
+      <text x="44" y="300">0</text>
+      <text x="221" y="300">10</text>
+      <text x="398" y="300">20</text>
+      <text x="575" y="300">30</text>
+      <text x="752" y="300">40</text>
+    </g>
+    <path d="M44 320h708" stroke="#35455a"/>
+    <text x="44" y="352" fill="#f1f5f9" font-size="19" font-weight="600">Go · Android · Web E2E · Simulator checks</text>
+    <text x="44" y="375" fill="#aebed0" font-size="15">Elapsed minutes · Owner-reported · No reported loss of verification quality</text>
+  </g>
+</svg>

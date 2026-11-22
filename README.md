@@ -9,6 +9,14 @@ lint/typecheck, bigger machines and test-worker reuse, caching and blobless clon
 parallel jobs, affected tasks, and pre-push hooks. It starts read-only and treats a
 false green as worse than a slow build.
 
+It auto-detects CI config and stack hints across GitHub Actions, GitLab CI,
+CircleCI, Buildkite, Azure Pipelines and Jenkins. Repo settings and recent runs
+confirm which configs are active. GitHub Actions has bundled history analysis;
+GitLab has a single-pipeline helper. Other providers get static analysis and can
+use authorized native telemetry when available. Every audit researches current
+compatible options and rates for the detected stack, without sending private
+repo evidence to search tools or defaulting to a vendor migration.
+
 Before tuning runners, it designs four validation categories from the repository's
 actual commands and policy: **code rules**, **change correctness**, **integrated main**,
 and **release readiness**. Its default targets are PR p50 <120 seconds and p95 <180
@@ -19,11 +27,21 @@ For services it evaluates feature gates and progressive rollouts; for libraries 
 other products it uses the appropriate compatibility, packaging and staging gates.
 Detection produces evidence for agent review, not permission to remove checks.
 
+## CI timing case study
+
+![CI case study: 30–40 minutes before, under 13 minutes after.](assets/ci-timing-case-study.svg)
+
+In an owner-reported test of `ci-optimiser`, CI elapsed time fell from **30–40
+minutes to under 13 minutes** across Go, Android, web E2E, and simulator checks,
+with no reported loss of verification quality. This is one project's result,
+not a benchmark or a speed guarantee.
+
 ## Contents
 
 - [SKILL.md](skills/ci-optimiser/SKILL.md): the procedure agents follow.
 - [Strict performance contract](skills/ci-optimiser/references/14-two-minute-ci.md): exact budgets, full queue execution, honest measurements, activation blockers and cost.
-- [Current toolchain migration](skills/ci-optimiser/references/15-toolchain-migration.md): Bun, Oxlint, Oxfmt, TypeScript 7, tsrs and Vitest parity requirements.
+- [Live research](skills/ci-optimiser/references/16-live-research.md): compatible releases, optimization candidates, prices and unknowns.
+- [JS/TS migration](skills/ci-optimiser/references/15-toolchain-migration.md): Bun, Oxlint, Oxfmt, TypeScript 7, tsrs and Vitest parity requirements.
 - [references/](skills/ci-optimiser/references/): discovery matrix, playbook, safety rules, measurement, examples, dated sources, config recipes and [four-category validation architecture](skills/ci-optimiser/references/08-validation-architecture.md).
 - [templates/](skills/ci-optimiser/templates/): audit report, optimization PR, paste-ready brief for agents without the skill.
 - [scripts/](skills/ci-optimiser/scripts/): Python 3.10+ stdlib tools.
