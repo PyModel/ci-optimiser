@@ -3,6 +3,13 @@
 Release Please maintains new entries from Conventional Commits after the existing
 0.1.0 release. Older descriptive commits are not rewritten or inferred as release notes.
 
+## [0.3.0](https://github.com/PyModel/ci-optimiser/compare/v0.2.0...v0.3.0) (2026-11-22)
+
+
+### Features
+
+* generalize CI audits across providers and stacks ([0bdcc1a](https://github.com/PyModel/ci-optimiser/commit/0bdcc1a99da0850379aee84024cccc42cfe9d596))
+
 ## [0.2.0](https://github.com/PyModel/ci-optimiser/compare/v0.1.0...v0.2.0) (2026-11-20)
 
 
