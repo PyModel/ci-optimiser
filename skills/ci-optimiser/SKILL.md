@@ -2,7 +2,8 @@
 name: ci-optimiser
 description: >-
   Use when CI is slow, flaky or expensive, or to optimize runners, tool
-  versions, checkout, caches, parallelism, affected tests or CI feedback.
+  versions, checkout, caches, parallelism, affected tests, CI feedback or
+  release automation.
   Detect the project's CI providers and stack, research current compatible
   options, and rank changes by trustworthy feedback time, runner use and
   cost. Audit read-only by default; preserve full pre-merge verification.
@@ -22,6 +23,8 @@ Two rules outrank speed:
 ## Scope and autonomy
 
 Start in `OBSERVE` unless the user requests action. Keep verification as the focus; inspect CD only where it shares capacity, affects required feedback or constrains a change. Preserve release/deploy behavior unless separately in scope.
+
+Load [release automation](references/17-release-automation.md) when asked about releases or when versioned release evidence is relevant to the audit. Recommend whether to keep, adopt or fix automation; do not redesign unrelated release lanes.
 
 | Mode | Work |
 |---|---|
