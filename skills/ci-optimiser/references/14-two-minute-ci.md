@@ -63,7 +63,8 @@ for first-execution outcomes, the PR-only approval exception and the full PR jou
 ## Queue and cancellation
 
 Enumerate the baseline suite, new tests, platform/database variants, build/type/coverage and migration obligations. Existing protection may omit required work; do not equate its current check list with the complete suite. Require that full suite on the actual combined queue candidate before main admission.
-On GitHub, preserve the existing required aggregate identity and configure both:
+Preserve the existing required aggregate identity. For GitHub Actions, use this
+`merge_group` and concurrency pattern:
 
 ```yaml
 on:
@@ -77,6 +78,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 ```
 
+For external CI, [verify the native queue event, exact candidate and expected check publisher](01-discovery-matrix.md#merge-admission-evidence).
 Use unique queue/main concurrency groups. A shared group can discard a pending
 candidate even with `cancel-in-progress: false`. Cancel only superseded PR work;
 release runners, processes and databases when cancelled.
@@ -144,6 +146,7 @@ Run independent required checks concurrently; share setup when measured faster
 after accounting for capacity, contention and artifact transport. Do not add
 avoidable serial work. If checks share a job, collect and list every check failure
 before returning nonzero. Keep genuine build, artifact and schema dependencies.
+For shared artifacts, apply the [parallel jobs gate](02-optimization-playbook.md#5-parallel-jobs).
 The authoritative aggregate may depend on all required children and must fail
 closed on failure, unexpected skip, cancellation, timeout, absent legs or missing
 reports. A cost-only candidate is not a speed recommendation.

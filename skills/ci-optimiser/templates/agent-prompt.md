@@ -37,10 +37,11 @@ a required gate. Preserve existing user authorization and scoped tool permission
    censored outcomes. Verify any [approval-only predecessor](../references/08-validation-architecture.md#pr-feedback-budget);
    it does not restart the clock. Unknown timing is not zero.
 3. Classify code rules, change correctness, full integration and release readiness.
-   Verify an active queue rule plus `merge_group` workflow on GitHub. Preserve the
-   required aggregate; a skipped/cancelled/missing child cannot pass it. Give queue
-   runs unique concurrency groups; cancel superseded PR runs only. Report pre-main
-   and post-push validation separately.
+   Verify an active queue rule. For GitHub Actions, verify the `merge_group`
+   workflow; for external CI, [verify the native queue event, exact candidate and expected check publisher](../references/01-discovery-matrix.md#merge-admission-evidence).
+   Preserve the required aggregate; a skipped/cancelled/missing child cannot pass
+   it. Give queue runs unique concurrency groups; cancel superseded PR runs only.
+   Report pre-main and post-push validation separately.
 4. Fill the audit report's [Option screen](audit-report.md#option-screen) for all
    seven families. Rank only material choices against keeping the current setup
    or the smallest compatible tune. Cite dated compatible primary sources; send

@@ -73,9 +73,11 @@ full protection even when a high-risk PR misses the objective.
 
 Require a merge queue/train to validate the combined candidate against the current
 base and queued predecessors. Admit it only after the full required suite and stable
-aggregate pass. On GitHub subscribe to `merge_group`, disable affected selection and
-test-result cache reads on that event, and verify the active provider rule requires
-all queue entries to pass. Post-push or nightly verification is supplemental only.
+aggregate pass. For GitHub Actions, subscribe to `merge_group` (`checks_requested`);
+for external CI, verify its supported queue event/ref, exact candidate and expected
+check publisher. For every executor, disable affected selection and test-result
+cache reads on the queue and verify the active provider rule requires all queue
+entries to pass. Post-push or nightly verification is supplemental only.
 
 Keep queue/main concurrency groups unique; cancel superseded PR runs only. Missing
 queue access or unsupported provider semantics is a reported blocker, not permission

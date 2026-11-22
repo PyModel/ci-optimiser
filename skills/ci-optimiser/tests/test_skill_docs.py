@@ -169,6 +169,45 @@ class SkillDocsTest(unittest.TestCase):
             self.assertTrue(os.access(repository / ".githooks/pre-push", os.X_OK))
             self.assertEqual((ROOT / "LICENSE").read_bytes(), (repository / "LICENSE").read_bytes())
 
+    def test_bun_checker_guidance_verifies_exact_pin(self):
+        sources = (ROOT / "references/06-official-sources.md").read_text()
+        row = next(line for line in sources.splitlines() if line.startswith("| Bun type checker |"))
+        self.assertNotRegex(row, r"follows TS .* since|needs `@types/bun`")
+        self.assertIn("compiler embedded in the exact Bun pin", row)
+
+    def test_github_queue_guidance_distinguishes_actions_from_external_ci(self):
+        for path in (
+            "SKILL.md", "templates/agent-prompt.md", "references/08-validation-architecture.md",
+            "references/14-two-minute-ci.md",
+        ):
+            with self.subTest(path=path):
+                text = " ".join((ROOT / path).read_text().split())
+                self.assertIsNotNone(
+                    re.search(r"GitHub Actions[^.]*\bmerge_group\b", text),
+                    "Scope the merge_group workflow prescription to GitHub Actions",
+                )
+                self.assertIsNotNone(
+                    re.search(r"external CI[^.]*queue event[^.]*candidate[^.]*publisher", text),
+                    "Require native event, candidate, and publisher proof from external CI",
+                )
+                self.assertIn("01-discovery-matrix.md#merge-admission-evidence", text)
+
+    def test_parallel_artifact_gate_requires_exact_provenance_and_negative_controls(self):
+        for path, heading in (
+            ("02-optimization-playbook.md", "5. Parallel jobs"),
+            ("10-stack-adapters.md", "Artifact transport"),
+        ):
+            with self.subTest(path=path):
+                text = (ROOT / "references" / path).read_text()
+                section = text.split(f"## {heading}\n", 1)[1].split("\n## ", 1)[0]
+                gate = " ".join(section.split("**Gate", 1)[1].split())
+                for marker in (
+                    "producer", "consumer", "SHA", "run ID", "attempt", "immutable artifact ID",
+                    "digest", "Reject latest-success", "stale", "mismatched", "missing",
+                    "must fail the consumer and required aggregate",
+                ):
+                    self.assertTrue(marker in gate, f"Missing {marker!r} from the artifact gate")
+
     def test_installed_strict_profile_sets_exclusive_targets(self):
         guide = "14-two-minute-ci.md"
         profile = (ROOT / "references" / guide).read_text()

@@ -33,7 +33,7 @@ Use the sources below for relevant GitHub and stack details.
 
 | Topic | Fact relied on | URL |
 |---|---|---|
-| Bun type checker | `bun check` added in 1.4.3; `bun check --no-script` always runs the checker and accepts its flags; needs `@types/bun`; follows TS 7.1 since 1.4.4 | https://bun.com/docs/runtime/check · https://bun.com/blog/bun-v1.4.4 · https://bun.com/blog/bun-v1.4.3 |
+| Bun type checker | `bun check` added in 1.4.3; `bun check --no-script` runs the checker and accepts its flags; `@types/bun` supplies types for Bun APIs. Verify the compiler embedded in the exact Bun pin | https://bun.com/docs/runtime/check · https://bun.com/blog/bun-v1.4.3 |
 | TypeScript 7 | 7.0 stable 2026-07-08 as `tsc` in `typescript`; no compiler API until 7.1; `@typescript/typescript6` gives `tsc6`; deprecated 6.0 options are errors; `--build` works | https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/ |
 | Oxlint | ~870 rules; plugin coverage; type-aware linting; JS plugins alpha; `@oxlint/migrate`; `eslint-plugin-oxlint` | https://oxc.rs/docs/guide/usage/linter |
 | Vitest 5 | `isolate` default true; `pool` default `forks`; `maxWorkers`; `--shard` by file with blob reporter; `sequence.shuffle` | https://vitest.dev/config/isolate · https://vitest.dev/config/pool · https://vitest.dev/config/maxworkers · https://vitest.dev/guide/cli |
@@ -49,7 +49,7 @@ Use the sources below for relevant GitHub and stack details.
 | Depot | label; ephemeral single-tenant EC2; per-second billing | https://depot.dev/docs/github-actions/overview |
 | Larger runners | Team / Enterprise Cloud only; per-minute billing | https://docs.github.com/en/actions/concepts/runners/larger-runners |
 | Runner pricing | per-minute rates by label | https://docs.github.com/en/billing/reference/actions-runner-pricing |
-| Merge queue | workflows need `merge_group` trigger | https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue |
+| Merge queue | GitHub Actions workflows need the `merge_group` trigger for required queue checks | https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue |
 | PR activity types (accessed 2026-11-02) | `pull_request` runs by default on `opened`, `synchronize`, `reopened`; `edited`, `labeled`, `assigned`, `review_requested` etc. are opt-in types | https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows |
 | Matrix strategy (accessed 2026-11-02) | `strategy.fail-fast` defaults to true and cancels in-progress and queued matrix jobs when one fails; without `max-parallel`, GitHub runs as many matrix jobs in parallel as runners allow | https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax |
 | OIDC permission (accessed 2026-11-02) | `id-token: write` is required to request the JWT and can be set on a single job | https://docs.github.com/en/actions/reference/security/oidc |
@@ -170,7 +170,7 @@ on repository parity tests.
 | Vitest measured reuse | Profile first; `doctor` finds candidate configurations, not CI p50/p95 evidence | https://vitest.dev/guide/improving-performance · https://vitest.dev/guide/cli |
 | Vitest shared state | Setup files rerun per file while imported modules remain cached without isolation | https://vitest.dev/config/setupfiles |
 | Vitest order/workers | Seeded shuffle trades off longest-first scheduling; file workers differ from in-worker concurrency | https://vitest.dev/config/sequence · https://vitest.dev/guide/parallelism |
-| Queue admission | `merge_group` required for queue checks; public organization repositories are eligible; every queue entry must pass under this contract | https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue |
+| Queue admission | GitHub Actions queue checks require `merge_group`; public organization repositories are eligible; every queue entry must pass under this contract | https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue |
 | Concurrency | Pending runs can be replaced in a shared group; use unique queue groups and PR-only cancellation | https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency |
 | Cache hit semantics | Exact `cache-hit` differs from fallback restore; default-branch caches are PR-readable | https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching |
 | node_modules | setup-node caches manager stores, not installed node_modules | https://github.com/actions/setup-node/blob/main/README.md |

@@ -59,7 +59,7 @@ Use [four validation categories](references/08-validation-architecture.md) to ma
 | `integration` | Full suite on each combined queue candidate **before main admission**, regardless of PR selection. |
 | `release` | Exact validated source and artifact with product-specific compatibility, provenance and rollout evidence; deployment authorization remains separate. |
 
-Keep `ci` or the existing required identity stable. On GitHub, add `merge_group: {types: [checks_requested]}` and verify a provider rule requires the queue and the full aggregate. Workflow YAML alone does not enforce main admission. Use PR-specific concurrency; give queue/main runs unique groups so a later pending run cannot replace an earlier candidate.
+Keep `ci` or the existing required identity stable. Verify the SCM rule requires the queue and the full aggregate. For GitHub Actions, add `merge_group: {types: [checks_requested]}`; for external CI, [verify the native queue event, exact candidate and expected check publisher](references/01-discovery-matrix.md#merge-admission-evidence). Workflow YAML alone does not enforce main admission. Use PR-specific concurrency; give queue/main runs unique groups so a later pending run cannot replace an earlier candidate.
 
 ## Experiment and ship
 

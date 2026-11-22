@@ -88,6 +88,11 @@ behavior under the native provider's semantics.
 **Counterexamples.** Each job repeats a 2-minute install, so 4 parallel jobs cost 8 runner-minutes for a 1-minute gain; concurrency limit on the plan turns parallel jobs into queued jobs; hidden ordering (build artifacts consumed by tests). **Build once, fan out** (one upstream build job, consumers download its artifact) cuts runner-minutes but adds a serial stage: Δ wall-clock = new serial stage + artifact upload/download on the slowest consumer − work removed from the pole. If that is above zero, it is a bill-only change, never a speed recommendation; a warm cache in each consumer is the alternative. Steps inside one job can run concurrently only when they share no cache, artifact, output directory, `GITHUB_ENV` write or started server.
 
 **Gate.** Critical path shorter at p50 and p95 (stacked, not summed: [sizing](04-measurement-benchmarking.md#sizing-and-combining-savings)); aggregate check fails when any child fails, is cancelled, or is skipped unexpectedly (test it by forcing a failure in each child); runner-minutes delta reported.
+If jobs pass artifacts, pin and verify the exact SHA, run ID and attempt of both
+producer and consumer, plus the immutable artifact ID and expected digest. Reject
+latest-success lookup, even as a fallback. As negative controls, stale, mismatched
+and missing artifacts must fail the consumer and required aggregate. See
+[artifact transport](10-stack-adapters.md#artifact-transport).
 
 ## 6. Affected tasks
 
