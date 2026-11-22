@@ -9,9 +9,10 @@ import shutil
 import tempfile
 import unittest
 from datetime import date
-from functools import lru_cache
+from functools import cache, lru_cache
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -114,6 +115,15 @@ def helper_inventory_problems(inventory, features, root, reviewed):
                 problems.append("unreadable helper/test source: " + path)
         return trees[path]
 
+    @cache
+    def doc_targets(path):
+        # Most helpers share the registry page. Resolve its links once per
+        # validation, but read again on the next call so edits are visible.
+        if not path.is_file():
+            return frozenset()
+        targets = re.findall(r"\]\(([^)#\s]+)(?:#[^)]*)?\)", path.read_text(encoding="utf-8"))
+        return frozenset((path.parent / target).resolve() for target in set(targets))
+
     for entry in entries:
         if not isinstance(entry, dict):
             continue
@@ -144,14 +154,11 @@ def helper_inventory_problems(inventory, features, root, reviewed):
                     and set(entry["consumed_by"]) == consumers, path + ": internal consumers missing or stale")
             require(nonempty(entry.get("reason")), path + ": internal purpose missing")
             continue
+        resolved_helper = actual[path].resolve()
         documented = False
         for doc in docs:
-            doc_path = root / doc
-            if not doc_path.is_file():
-                continue
-            for target in re.findall(r"\]\(([^)#\s]+)(?:#[^)]*)?\)", doc_path.read_text(encoding="utf-8")):
-                if (doc_path.parent / target).resolve() == actual[path].resolve():
-                    documented = True
+            if resolved_helper in doc_targets(root / doc):
+                documented = True
         require(documented, path + ": public documentation link missing or stale")
         referenced = False
         for test in tests:
@@ -196,6 +203,7 @@ def matrix_problems(matrix, root=ROOT):
             require(policy.get(field) == "unverified", f"unsupported outcome claim: {field}")
 
     checked_paths = set()
+    resolved_root = root.resolve()
 
     def paths_and_sources(record, label):
         for field in PATH_FIELDS:
@@ -216,7 +224,7 @@ def matrix_problems(matrix, root=ROOT):
                     continue
                 destination = root.joinpath(*path.parts)
                 try:
-                    destination.resolve().relative_to(root.resolve())
+                    destination.resolve().relative_to(resolved_root)
                 except ValueError:
                     problems.append(f"evidence path leaves repository: {entry}")
                     continue
@@ -329,6 +337,20 @@ class FeatureMatrixTest(unittest.TestCase):
     def test_register_links_versions_scopes_and_complete_inventory(self):
         self.assertEqual(matrix_problems(self.matrix), [])
         self.assertEqual(len(self.matrix["recommendation_coverage"]), 36)
+
+    def test_shared_helper_document_is_read_once_per_validation(self):
+        shared_doc = ROOT / "references/helper-registry.md"
+        real_read = Path.read_text
+        reads = []
+
+        def count_reads(path, *args, **kwargs):
+            if path == shared_doc:
+                reads.append(path)
+            return real_read(path, *args, **kwargs)
+
+        with patch.object(Path, "read_text", count_reads):
+            self.assertEqual(matrix_problems(self.matrix), [])
+        self.assertEqual(len(reads), 1)
 
     def test_missing_or_duplicate_recommendation_is_detected(self):
         for change in (lambda rows: rows.pop(), lambda rows: rows.append(copy.deepcopy(rows[0]))):
