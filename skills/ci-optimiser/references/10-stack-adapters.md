@@ -211,10 +211,13 @@ default assumption. **Fallback:** local or uncached execution. Sources:
 consumer. For already-compressed payloads, benchmark upload compression level 0;
 for text, reduced bytes may win. Include build-once fan-out's serial barrier.
 
-**Gate:** immutable artifact identity, exact run/attempt/source, expected files,
-digest verification, same output and fail-on-missing behavior. Scope hidden-file
-uploads narrowly; never include an entire workspace to obtain reports. Keep only
-the retention required by policy. **Fallback:** existing validated transport.
+**Gate:** Verify the pinned producer and consumer SHA, run ID and attempt, immutable
+artifact ID, digest of downloaded bytes, expected files and equivalent output.
+Reject latest-success lookup, even as a fallback. In separate negative controls,
+stale, mismatched and missing artifacts must fail the consumer and required aggregate.
+Scope hidden-file uploads narrowly; never include an entire workspace to obtain
+reports. Keep only the retention required by policy. **Fallback:** existing validated
+transport with the same identity checks.
 Source: [upload-artifact](https://github.com/actions/upload-artifact).
 
 ## Runner resources

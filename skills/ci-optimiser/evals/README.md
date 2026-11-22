@@ -5,7 +5,10 @@ core skill or changing a gate recommendation. The [existing prompts](prompts.md)
 cover broad CI decisions; the versioned [public cases](public/cases.json) add cache
 layers, incomplete economics, exact versus fallback hits, hidden saves, acceptance
 retries, planned trials, paired ordinary/instruction-bearing logs, and release
-provider fit, squash inputs, bot approval holds, and draft eligibility.
+provider fit, squash inputs, bot approval holds, and draft eligibility. Two
+synthetic cases also cover exact admission across providers
+(`split-provider-admission`) and evidence-led PR feedback and option screening
+(`offline-option-screen`).
 
 ## Run and grade separately
 
@@ -50,5 +53,7 @@ subset is explicitly reported as incomplete suite coverage. Review the outcomes 
 raw evidence; checker success is not a substitute for independent grading.
 
 See the exact [result contract](results-contract.md). The deterministic checker and
-fixture tests run with the ordinary unittest suite; actual model comparisons are a
-separate, explicitly reported experiment.
+fixture tests run with the ordinary unittest suite. Passing them establishes
+registration and ledger structure, not model behavior, hosted execution, or a speedup.
+Run and report any graded model comparison or hosted trial separately and only with
+authorization.

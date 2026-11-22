@@ -15,11 +15,25 @@ future compatibility. Re-open sources before quoting a current version or price.
 | Azure Pipelines | Trigger, stage, job, pool and template schema | https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/?view=azure-pipelines |
 | Jenkins | Jenkinsfile syntax, agents, triggers and parallel stages | https://www.jenkins.io/doc/book/pipeline/syntax/ |
 
+## Merge admission sources (2026-11-22)
+
+| Topic | Fact relied on | Primary source |
+|---|---|---|
+| GitHub merge groups and required checks | Actions needs `merge_group`; external CI needs the queue event/ref. Verify the expected check source; native success can include skipped or neutral states. | [Merge queue](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue) · [Required checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks) |
+| Buildkite external queue execution | Native GitHub queue support uses the merge-groups webhook and `head_sha`; ordinary queue-ref pushes do not establish that native execution. | [GitHub integration](https://buildkite.com/docs/pipelines/source-control/github#running-builds-on-merge-queues) |
+| GitLab train availability and enforcement | Train prerequisites and enforcement are separate; external MR status checks refer to source HEAD. | [Merge trains](https://docs.gitlab.com/ci/pipelines/merge_trains/) · [Enforcement](https://docs.gitlab.com/ci/pipelines/merge_trains#enforce-merge-trains) · [External status checks](https://docs.gitlab.com/user/project/merge_requests/status_checks/) |
+| Azure Repos admission policies | Required build validation or external status can gate PR completion; these documented policies do not establish a speculative queue. | [Branch policies](https://learn.microsoft.com/en-us/azure/devops/repos/git/branch-policies?view=azure-devops) · [Status policy](https://learn.microsoft.com/en-us/azure/devops/repos/git/pr-status-policy?view=azure-devops) |
+
+Not confirmed for an arbitrary target: installed feature support, effective
+queue enforcement, check publisher identity, or ability to bypass the rule.
+
+## Tool and workflow sources
+
 Use the sources below for relevant GitHub and stack details.
 
 | Topic | Fact relied on | URL |
 |---|---|---|
-| Bun type checker | `bun check` added in 1.4.3; `bun check --no-script` always runs the checker and accepts its flags; needs `@types/bun`; follows TS 7.1 since 1.4.4 | https://bun.com/docs/runtime/check · https://bun.com/blog/bun-v1.4.4 · https://bun.com/blog/bun-v1.4.3 |
+| Bun type checker | `bun check` added in 1.4.3; `bun check --no-script` runs the checker and accepts its flags; `@types/bun` supplies types for Bun APIs. Verify the compiler embedded in the exact Bun pin | https://bun.com/docs/runtime/check · https://bun.com/blog/bun-v1.4.3 |
 | TypeScript 7 | 7.0 stable 2026-07-08 as `tsc` in `typescript`; no compiler API until 7.1; `@typescript/typescript6` gives `tsc6`; deprecated 6.0 options are errors; `--build` works | https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/ |
 | Oxlint | ~870 rules; plugin coverage; type-aware linting; JS plugins alpha; `@oxlint/migrate`; `eslint-plugin-oxlint` | https://oxc.rs/docs/guide/usage/linter |
 | Vitest 5 | `isolate` default true; `pool` default `forks`; `maxWorkers`; `--shard` by file with blob reporter; `sequence.shuffle` | https://vitest.dev/config/isolate · https://vitest.dev/config/pool · https://vitest.dev/config/maxworkers · https://vitest.dev/guide/cli |
@@ -35,7 +49,7 @@ Use the sources below for relevant GitHub and stack details.
 | Depot | label; ephemeral single-tenant EC2; per-second billing | https://depot.dev/docs/github-actions/overview |
 | Larger runners | Team / Enterprise Cloud only; per-minute billing | https://docs.github.com/en/actions/concepts/runners/larger-runners |
 | Runner pricing | per-minute rates by label | https://docs.github.com/en/billing/reference/actions-runner-pricing |
-| Merge queue | workflows need `merge_group` trigger | https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue |
+| Merge queue | GitHub Actions workflows need the `merge_group` trigger for required queue checks | https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue |
 | PR activity types (accessed 2026-11-02) | `pull_request` runs by default on `opened`, `synchronize`, `reopened`; `edited`, `labeled`, `assigned`, `review_requested` etc. are opt-in types | https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows |
 | Matrix strategy (accessed 2026-11-02) | `strategy.fail-fast` defaults to true and cancels in-progress and queued matrix jobs when one fails; without `max-parallel`, GitHub runs as many matrix jobs in parallel as runners allow | https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax |
 | OIDC permission (accessed 2026-11-02) | `id-token: write` is required to request the JWT and can be set on a single job | https://docs.github.com/en/actions/reference/security/oidc |
@@ -43,8 +57,9 @@ Use the sources below for relevant GitHub and stack details.
 ## Validation architecture and reviewed updates (2026-11-17)
 
 The earlier four-category/rolling-main material is retained as historical analysis.
-The 2026-11-20 strict contract requires pre-main queue execution and p50 <120 s /
-p95 <180 s; these are user requirements, not provider guarantees or measured gains.
+The [strict performance contract](14-two-minute-ci.md#acceptance-and-audit)
+defines current targets and pre-main queue execution. These are user requirements,
+not provider guarantees or measured gains.
 
 | Topic | Fact relied on | URL |
 |---|---|---|
@@ -116,6 +131,9 @@ p95 <180 s; these are user requirements, not provider guarantees or measured gai
 Current paid-runner quotes; actual billing/allowances; GHES/plan feature support;
 downstream framework/compiler/plugin compatibility; complete test-selection coverage;
 cryptographic provenance verification; telemetry comparability; measured savings.
+Also unconfirmed: warm-image availability/capacity and isolation on the target
+plan; exact Bun pin/runtime support for moving-doc test imports and module
+isolation; rule, format, type and test coverage on the target; hk coverage and wall time.
 These require target evidence. Python helper fixtures do not establish production
 support for every stack or a measured performance improvement.
 
@@ -135,8 +153,8 @@ support for every stack or a measured performance improvement.
 
 ## Strict contract and toolchain review (2026-11-20)
 
-The 120/180-second PR targets and per-stage budgets are user requirements. None
-is a provider SLA. Current tool support is conditional on repository parity tests.
+The entries below support tool claims, not target timings. Tool adoption depends
+on repository parity tests.
 
 | Topic | Fact relied on | URL |
 |---|---|---|
@@ -152,7 +170,7 @@ is a provider SLA. Current tool support is conditional on repository parity test
 | Vitest measured reuse | Profile first; `doctor` finds candidate configurations, not CI p50/p95 evidence | https://vitest.dev/guide/improving-performance · https://vitest.dev/guide/cli |
 | Vitest shared state | Setup files rerun per file while imported modules remain cached without isolation | https://vitest.dev/config/setupfiles |
 | Vitest order/workers | Seeded shuffle trades off longest-first scheduling; file workers differ from in-worker concurrency | https://vitest.dev/config/sequence · https://vitest.dev/guide/parallelism |
-| Queue admission | `merge_group` required for queue checks; public organization repositories are eligible; every queue entry must pass under this contract | https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue |
+| Queue admission | GitHub Actions queue checks require `merge_group`; public organization repositories are eligible; every queue entry must pass under this contract | https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue |
 | Concurrency | Pending runs can be replaced in a shared group; use unique queue groups and PR-only cancellation | https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency |
 | Cache hit semantics | Exact `cache-hit` differs from fallback restore; default-branch caches are PR-readable | https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching |
 | node_modules | setup-node caches manager stores, not installed node_modules | https://github.com/actions/setup-node/blob/main/README.md |
@@ -161,6 +179,16 @@ is a provider SLA. Current tool support is conditional on repository parity test
 | Blacksmith sizing/cost | Available 8-vCPU labels; shared 3,000 base-equivalent monthly minutes; size-adjusted allowance | https://docs.blacksmith.sh/blacksmith-runners/overview |
 | Blacksmith pricing | Listed x64 base rate $0.004/min; optional storage separately priced; OSS program requires application | https://www.blacksmith.sh/pricing |
 | GitHub public billing | Standard hosted compute in public repositories is free; actual plan/storage/larger-runner charges remain separate | https://docs.github.com/en/billing/concepts/product-billing/github-actions |
+
+## Strict profile tool checks (2026-11-22)
+
+| Topic | Fact relied on | Primary source |
+|---|---|---|
+| Bun format | Bun 1.4.4 ships `bun fmt`; CI needs nonwriting `--check` and built-in `--no-script` dispatch. Verify both on the exact pin | [1.4.4 release](https://bun.com/blog/bun-v1.4.4) |
+| Bun lint | 1.4.4-tagged docs put built-in lint on canary only; current docs describe `.oxlintrc.json` and `--no-script`, not support on that stable pin | [Tagged docs](https://github.com/oven-sh/bun/blob/bun-v1.4.4/docs/lint/index.mdx) · [Current docs](https://bun.com/docs/lint) |
+| Bun tests | Current docs describe `vitest` imports, seeded randomization and `--isolate=modules`; the tagged 1.4.4 test docs do not establish the import or module-isolation support | [Imports](https://bun.com/docs/test/writing-tests) · [Isolation](https://bun.com/docs/test/parallel) · [Seed controls](https://bun.com/docs/test) |
+| hk hooks | Repo-local installation and selective applicability; verify installed hook, index handling and affected-check coverage | [Getting started](https://jdx.github.io/hk/getting_started.html) |
+| Runner billing | Blacksmith lists $0.004/min for base x64 and a shared 3,000 2-vCPU-equivalent minutes/month; GitHub standard hosted compute is free for public repos. Verify actual SKU/allowance and ancillary billing | [Blacksmith runners](https://docs.blacksmith.sh/blacksmith-runners/overview) · [Blacksmith pricing](https://www.blacksmith.sh/pricing) · [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions) |
 
 ## Manual cloud timing audit (2026-11-20)
 

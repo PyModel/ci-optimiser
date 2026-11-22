@@ -313,6 +313,20 @@ waiting/setup pass, while its future running/runner duration remains pending.
 Guard its command and audit its completed duration later. Never call that a fully
 completed workflow-budget certificate or a provider queue-rule verification.
 
+With a trusted, run/head/attempt-bound `--current-job-setup` record, the live check
+can account for two GitHub job-status lags without polling:
+
+- A dependency still listed as `in_progress` needs a successful job conclusion,
+  a valid completion timestamp and the same successful step and timing evidence
+  as a completed job. Workflow callers must still require dependency success.
+- If the current job still shows `queued` and explicitly lists no steps or
+  outcome, its local first-work record must match the policy's setup marker and
+  first listed work step. Creation to that observation is an upper bound for
+  both waiting and setup, and both limits still apply. Runtime remains pending.
+
+Neither case substitutes for an observed failure or an incomplete dependency.
+Offline verification without a local boundary retains strict API status checks.
+
 ### PR approval history
 
 A provider attempt counter can advance when an approval hold is resumed before any

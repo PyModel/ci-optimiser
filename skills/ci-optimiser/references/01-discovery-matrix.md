@@ -77,6 +77,22 @@ For external run data, calculate only metrics whose native timestamps and attemp
 identities are understood. Use [normalized evidence](11-evidence-formats.md) where
 semantics match; do not feed native payloads into `analyze_gh.py`.
 
+## Merge admission evidence
+
+Use the [dated primary sources](06-official-sources.md#merge-admission-sources-2026-11-22)
+to map the SCM rule to its actual executor and check publisher. Verify target
+entitlement separately from enforcement.
+
+| Native path | What to verify |
+|---|---|
+| GitHub merge queue | Verify the effective target rule, required check context and expected source. Actions uses `merge_group` (`checks_requested`); an external executor needs its supported queue event/ref and exact candidate. In Buildkite native queue mode, verify **Build merge queues**, the merge-groups webhook and execution of its `head_sha`. GitHub still controls admission; a PR run or ordinary queue-ref push is not that queue evidence. |
+| GitLab merge train | Verify installed version/tier, GitLab hosting, and MR and merged-results pipelines. An available or enabled train is not an enforced train: inspect the enforcement mode and effective bypass/direct-push permissions. External MR checks scoped to source HEAD do not prove a train pipeline ran. |
+| Azure Repos PR policy | Verify required versus optional build validation or external status, target-update expiry, per-iteration reset and bypass permissions as applicable. These PR policies do not prove an enforced speculative queue; require separate evidence for strict admission. |
+
+For other or offline providers, use available native records or authorized
+read-only exports. If the effective rule, publisher or exact execution cannot
+be verified, report unverified and keep existing protections.
+
 ## Workflow risk flags from discovery
 
 | Key in `github_workflows` | Why it matters | Action |

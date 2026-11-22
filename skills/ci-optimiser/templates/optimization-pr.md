@@ -17,22 +17,24 @@
 
 Integration policy: required full-suite merge queue/train before main. Active provider rule and workflow evidence: <links>. Queue selection/cache bypass and unique concurrency group: <proof>. Post-push verification does not substitute.
 
-PR objective: latest-revision p50 <120 s / p95 <180 s. Observed baseline: <value / unknown>. Per-job wait <10 s, setup <30 s, lint/types <5 s and test work <60 s; local hook <9 s. At-limit or exceeded budgets fail; unfinished work never turns green.
+Use the [strict performance targets](../references/14-two-minute-ci.md#acceptance-and-audit).
+Record baseline, target and enforcement separately. Fail proven enforced
+stage/job bounds at equality or above; unfinished work never turns green.
 
 ## Evidence
 
 | Metric | Baseline | Candidate | Delta | n | Definition |
 |---|---|---|---|---|---|
-| latest-revision PR feedback p50/p95 | | | | | exact push receipt → complete current-revision PR gate |
+| first-execution PR feedback p50/p95 | | | | | exact push receipt → first authoritative success or failure, separate outcomes |
 | first-push PR journey p50/p95 | | | | | includes repair/re-push delays |
-| full integrated validation lag p50/p95 | | | | | candidate/main event → full green |
-| total runner-minutes across PR + main + release | | | | | |
+| full integrated validation lag p50/p95 | | | | | pre-main candidate queue wait and full execution; supplemental main separately |
+| total runner-minutes across PR + queue + main + release | | | | | |
 
 Workload state: same / reduced / increased / changed / unknown (evidence: <job and test identities>). Gating job before → after: `<a>` → `<b>`. Product code touched: no / yes (then the delta is not CI-only).
 
 Experiment record: `experiments/<id>.json`. Cold and warm cache measured separately: yes / no.
 
-Claim: <equivalent-work acceleration / scheduling redistribution / both>. If work moved later: <which obligations, retained gates, detection delay and accepted risk; do not count deferred work as eliminated>. Failed/cancelled/superseded/unvalidated cohorts: <counts/ages>. Timestamp source/proxy and sample limitations: <details>.
+Claim: <equivalent-work acceleration / scheduling redistribution / both>. If work moved later: <which obligations, retained gates, detection delay and accepted risk; do not count deferred work as eliminated>. Failed/cancelled/superseded/unvalidated cohorts: <counts/ages>. Timestamp source/proxy and sample limitations: <details>. Itemize approval, dependency and runner waits without resetting the receipt clock; execution retries are diagnostic only.
 
 Identity record: <PR/base/queue-candidate/final-main/build SHAs and verified mapping or rerun>. Artifact digest: <digest / not applicable>. Validation/workflow/toolchain/input policy fingerprint: <digest>. Full-green and readiness evidence/expiry: <links>. A later SHA, changed policy or rebuilt artifact requires applicable fresh proof.
 
@@ -40,7 +42,8 @@ Identity record: <PR/base/queue-candidate/final-main/build SHAs and verified map
 
 - [ ] Required check names unchanged (or branch rules updated with owner approval: <link>)
 - [ ] Forced failure in each affected job turns the required check red (probe commits: <shas>)
-- [ ] Every original obligation has a retained gate at the approved boundary; same-workload comparisons preserve test identity/count/coverage (<evidence>)
+- [ ] Rules and required checks are preserved or grown; every original obligation has a retained gate at the approved boundary; same-workload comparisons preserve test identity/count/coverage (<evidence>)
+- [ ] Independent required work has no avoidable serialization; shared setup is measured faster, preserves real dependencies and lists every check failure
 - [ ] Selection/placement changes shadowed against FULL on the same representative revisions; seeded/adversarial failures caught
 - [ ] No new `continue-on-error`, `|| true`, or always-skip `if:`
 - [ ] Cold-cache run green
@@ -69,14 +72,17 @@ Revert this PR and restore the previous gate/selection policy. Thresholds: <agre
 
 ## Tool and budget evidence
 
-| Old tool/check | Candidate | Before/after run links | Diagnostics/rules/files missing | Retained fallback / reason |
+| Old tool/check and pin | Candidate and pin | Before/after run links | Diagnostics/rules/files/tests missing | Retained fallback / reason |
 |---|---|---|---|---|
 | | | | | |
 
-Per-job wait/setup/work p50/p95 and sample counts: <table>. Exact-cache hits:
-<numerator / eligible restores, misses and unknowns>. Hidden-change negative control:
-<real source diff, selected/full exits, guard result>. Budget negative control:
-<command/phase at limit remains nonzero>.
+Per-job runner wait/setup/work and runner elapsed (including slowest required job):
+<p50/p95 and n>. Separate lint/format/typecheck, test work per shard and installed
+pre-push including startup: <observations, bounds and evidence>. Exact-cache hits:
+<exact numerator / complete eligible restores; fallback, misses, errors and unknowns>.
+Hidden-change negative control: <real source diff, selected/full exits, guard result>.
+Budget negative control: <proven command/phase at limit remains nonzero>.
+If pruning: <two-week classification, unique and protected coverage retained>.
 
 ## One activation and cost list
 
@@ -85,5 +91,6 @@ Per-job wait/setup/work p50/p95 and sample counts: <table>. Exact-cache hits:
 | none / specific item | | | |
 
 Final before/after: PR p50/p95 <values and n>; total runner seconds/minutes <values>;
-monthly compute/storage <actual / estimate / unknown>. Include queue and trusted-main
-cache runs. Never price the critical-path wall time as if it were all runner work.
+native billable units <values / unknown>; monthly compute/storage
+<actual / estimate / unknown>. Include queue and trusted-main cache runs. Never
+price the critical-path wall time as if it were all runner work.

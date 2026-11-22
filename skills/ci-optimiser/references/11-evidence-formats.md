@@ -106,6 +106,10 @@ step unions, so restore remains a subset of setup and save/teardown still counts
 toward runner time. Overlap is explicit and uncovered runner time is unattributed.
 Per-observation decomposition includes save/teardown; percentiles are not additive.
 The existing strict budget gate and its explicit work policy are unchanged.
+Its `waiting_s` is job creation to start; that interval does not prove that the
+job was eligible for a runner at creation. Use it as a proxy where appropriate,
+not as proof of isolated runner wait. Do not reinterpret deployed bounds or
+example policies as the [strict profile targets](14-two-minute-ci.md#acceptance-and-audit).
 
 A requested map with a missing or ambiguous binding, config drift, incomplete
 inventory or contradictory boundary produces unknown phases, never a heuristic
@@ -251,9 +255,9 @@ Never invent a lockfile from regex hits. See [platform semantics](09-platform-up
 `evaluate_validation.py` evaluates supplied legacy policy assertions. It does not
 verify provider queue configuration/admission, merge_group execution, full test
 inventory or fresh test execution. Its scalar feedback threshold accepts equality
-and has no p50 test, so it does not certify the strict p50 <120 s / p95 <180 s
-contract. A result called pass is limited to those assertions; use explicit stage
-budgets and separately reviewed provider/percentile evidence for the strict policy.
+and has no p50 test. Neither the unchanged example policy nor an evaluator pass
+certifies the [strict profile](14-two-minute-ci.md#acceptance-and-audit). Use proven
+stage/job bounds and separately reviewed provider, percentile and cache evidence.
 
 Copy [validation-policy.example.json](../templates/validation-policy.example.json)
 and have the repository owner review its expectations. It defines:

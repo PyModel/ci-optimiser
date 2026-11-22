@@ -1,7 +1,8 @@
 # Strict performance contract
 
-Reviewed 2026-11-20. The budgets and verification gates take precedence over older
-examples. They are not vendor guarantees or measurements. Choose stack/provider
+Reviewed 2026-11-22. This is the source of truth for skill targets. Older examples
+and deployed policies keep their own semantics; none certifies this profile by
+default. Targets are not vendor guarantees or measurements. Choose stack/provider
 optimizations with [live research](16-live-research.md) and target evidence.
 
 ## Contents
@@ -10,6 +11,7 @@ optimizations with [live research](16-live-research.md) and target evidence.
 - [Queue and cancellation](#queue-and-cancellation)
 - [Runner and setup changes](#runner-and-setup-changes)
 - [Parallel work and test reuse](#parallel-work-and-test-reuse)
+- [Two-week pruning review](#two-week-pruning-review)
 - [Selection negative control](#selection-negative-control)
 - [Local enforcement](#local-enforcement)
 - [Budget enforcement](#budget-enforcement)
@@ -17,33 +19,52 @@ optimizations with [live research](16-live-research.md) and target evidence.
 
 ## Acceptance and audit
 
-Require first-attempt PR feedback p50 <120 s and p95 <180 s. Require per-job waiting
-<10 s, setup <30 s, lint <5 s, typecheck <5 s, test work <60 s per shard and the
-local pre-push path <9 s. Require >95% exact PR dependency-cache hits where that
-cache is applicable. Define build, formatting, reporting and total-job budgets
-from the measured path before modifying them; do not leave unbounded work.
+| Metric | Target |
+|---|---|
+| First-execution PR feedback | `p50 <60 s / p95 <120 s` |
+| Per-job runner wait | `<5 s` |
+| Per-job setup | `<15 s` |
+| Slowest required job, elapsed on runner | `<35 s` |
+| Lint work | `<1 s` |
+| Format work | `<1 s` |
+| Typecheck work | `<5 s` |
+| Test work per shard | `<30 s` |
+| Exact eligible PR dependency-cache hits | `>95%` |
+| Local pre-push wall time | `<9 s` |
+
+Use the complete applicable cohort for rolling targets. Enforce only proven
+stage/job bounds (including local pre-push where applicable); fail at equality
+or over the enforced limit. Report unmet or unknown objectives, not false greens.
+Do not copy these numbers into an unmeasured pipeline or substitute them for its
+existing limits. Define build and reporting bounds from the measured path.
+Preserve or grow the rules and required checks even when targets are missed.
 
 Retrieve up to the last 150 runs by default (configurable), paginating jobs and attempts, including failures,
 cancellations and incomplete runs. Retention or fewer available runs limits the
 sample; never fabricate the remainder. Split event, workflow/config era, runner,
-cache state and first attempt versus rerun. Keep a failed original attempt even
-when a later attempt passed. No check rerun substitutes for a code fix.
+cache state and first execution versus diagnostic rerun. Keep a failed original
+attempt even when a later attempt passed. No check rerun substitutes for a code fix.
 
-Report one row per job: waiting/setup/running p50 and p95, n, outcome counts,
-timestamp source and gaps. Expose reporting/teardown/unattributed time. Missing
-setup timestamps cannot count as a 0-second setup. Resolve step names against
-actual commands; generic analyzer heuristics are observations, not budget proof.
-Report dependency wait separately from job creation-to-start runner wait.
+Report one row per job: runner wait, setup, work and runner elapsed p50/p95, n,
+outcomes, timestamp source and gaps. Runner wait starts when the job is eligible for
+a runner. Setup is runner start to first required work; runner elapsed is runner
+start to job completion, including setup, work, save, teardown and gaps. Time each
+required command; test work per shard is not whole-job time. Expose reporting and
+unattributed time. Resolve step names against the commands; analyzer heuristics
+and a created-to-start timestamp pair are diagnostic proxies, not proof of
+isolated phases. Keep approval and dependency wait separate.
 
 Rank the largest measured bucket on the required DAG. Do not sum parallel jobs
 or their percentiles to estimate PR time. Record total runner seconds separately.
 Use one stated percentile method across comparisons (the analyzer uses nearest-rank). A small sample's p95 is descriptive; one fast run cannot establish a reliable tail.
-Measure current-revision feedback and the full PR journey including repair delay.
+Use the [PR feedback budget](08-validation-architecture.md#pr-feedback-budget)
+for first-execution outcomes, the PR-only approval exception and the full PR journey.
 
 ## Queue and cancellation
 
 Enumerate the baseline suite, new tests, platform/database variants, build/type/coverage and migration obligations. Existing protection may omit required work; do not equate its current check list with the complete suite. Require that full suite on the actual combined queue candidate before main admission.
-On GitHub, preserve the existing required aggregate identity and configure both:
+Preserve the existing required aggregate identity. For GitHub Actions, use this
+`merge_group` and concurrency pattern:
 
 ```yaml
 on:
@@ -57,6 +78,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 ```
 
+For external CI, [verify the native queue event, exact candidate and expected check publisher](01-discovery-matrix.md#merge-admission-evidence).
 Use unique queue/main concurrency groups. A shared group can discard a pending
 candidate even with `cancel-in-progress: false`. Cancel only superseded PR work;
 release runners, processes and databases when cancelled.
@@ -81,13 +103,14 @@ retroactively. If activation is blocked, finish the code/PR and report the exact
 
 ## Runner and setup changes
 
-Compare the current pool, native sizing/capacity changes and compatible providers
-only when queue or execution evidence warrants it. On GitHub, Blacksmith is one
-candidate; verify organization GitHub App access before changing its labels.
-A label is not capacity. Verify images, architecture, isolation, fork trust,
-permissions and cancellation. Use larger workers for CPU-bound tests only after
-measuring scaling; keep brief aggregate jobs where queue time and cost are best.
-Measure queue plus total time; do not promise <10 s queues.
+Compare the current pool and smallest native tune first. If a measured GitHub
+runner bottleneck warrants a switch, prefer Blacksmith among compatible candidates
+and test warm ephemeral images where supported. Verify organization GitHub App
+access, plan, capacity, architecture, trust isolation, permissions and cleanup.
+Use a fresh runner per job; warm toolchain state must be trusted and pinned, with
+no secrets, prior test results or untrusted work carried forward. Compare cold and
+warm runs at the same load, including wait, setup and execution. Keep the incumbent
+if parity, speed or cost does not justify switching. See the [dated sources](06-official-sources.md#strict-profile-tool-checks-2026-11-22).
 
 Seed trusted dependency caches from trusted main where supported. For JS,
 compare exact-key `node_modules`, package stores and cold installs when setup
@@ -96,8 +119,9 @@ package-manager version, lockfile, workspace layout, install flags, trusted life
 settings and patch/config compatibility. Do not restore a broad old dependency tree
 as valid without a frozen reconciliation. Never put secrets in caches.
 
-Count only primary-key exact restores in the >95% target; distinguish fallback,
-miss, restore error and unknown. Include every eligible PR restore in the denominator.
+Count only primary-key exact restores toward the target; distinguish fallback,
+miss, restore error and unknown. Use a complete, nonempty denominator of all
+eligible PR restore opportunities; unresolved eligibility or outcomes cannot certify it.
 Lockfile changes legitimately miss; report them, seed after trusted integration, and
 never reuse incompatible dependencies to improve the rate. A cold path must work.
 Trusted jobs must not consume artifacts or cache entries writable by untrusted PRs.
@@ -118,31 +142,50 @@ Do not add dependency caches to a dependency-free repository merely to fill a ch
 
 ## Parallel work and test reuse
 
-Run independent lint, types, build and tests concurrently. Keep genuine artifact or
-schema dependencies. Move migration validation and unrelated application tests out
-of the slowest job into independent required jobs; never beyond main admission.
-Check the aggregate on failure, skip, cancellation, missing matrix legs and missing
-reports. Avoid setup duplication that costs more than the parallelism saves.
+Run independent required checks concurrently; share setup when measured faster
+after accounting for capacity, contention and artifact transport. Do not add
+avoidable serial work. If checks share a job, collect and list every check failure
+before returning nonzero. Keep genuine build, artifact and schema dependencies.
+For shared artifacts, apply the [parallel jobs gate](02-optimization-playbook.md#5-parallel-jobs).
+The authoritative aggregate may depend on all required children and must fail
+closed on failure, unexpected skip, cancellation, timeout, absent legs or missing
+reports. A cost-only candidate is not a speed recommendation.
 
-Compare more cores with more shards within approved spend. Measure CPU, memory, I/O and
-database contention. Allocate workers against actual available cores and memory;
-leave capacity for services. Balance shards by measured file duration, preserve the
-complete inventory, then randomize order within each shard with a recorded seed.
-One database per shard still needs worker-level transaction/schema isolation.
+Where tests dominate, measure CPU, memory, I/O and database contention. Prefer
+more cores before adding shards when scaling is proven and within approved spend.
+Cap workers against actual capacity; reserve resources for services. Record file
+timings on full main runs. Split files over 20 s without losing shared lifecycle,
+test identities or coverage; keep an unsplittable file and record the blocker.
+If sharding, balance by measured file duration and record the randomization seed
+within each shard. Give each DB-backed shard its own database and isolate workers
+within a shard. Prove the exact union (no missing or duplicate assignments) and
+merged coverage before the aggregate passes. For JS reuse, see
+[per-file cleanup and seeded tests](15-toolchain-migration.md#vitest-reuse-and-scheduling).
 
-For Vitest reuse, prove executable cleanup after each file before `isolate: false`:
-restore mocks/timers/globals/env, DOM/storage, listeners/servers/pending work,
-database state and application singletons. Put the same contract in `AGENTS.md`.
-Do not reload the entire application in cleanup and call that reuse. Run multiple
-recorded seeds and individual-file leak probes. Keep isolation only for documented
-stateful/unsupported cases; fix the leak instead of adding retries or quarantine.
+## Two-week pruning review
+
+For two weeks, classify every test failure with its run/seed, cause, and what
+would still catch it: unique regression, duplicate detection, test/state leak,
+or runner/infrastructure failure. Leave unclassified and unobserved coverage intact.
+Do not prune authentication, authorization, privacy, migration or concurrency
+tests under this procedure. Remove only a proven redundant change detector: show
+a real defect that the retained check still catches at the same boundary and
+prove the rule/test coverage stays intact. Get test-owner review before removal;
+retain any unique check. Fix leaks and flakes instead of muting them.
+
+Document banned patterns in the target repo's agent/test guidance: arbitrary
+sleeps for readiness, unseeded randomness, order-dependent or shared mutable
+fixtures, and retries, quarantine or swallowed failures used to obtain green.
 
 ## Selection negative control
 
-Use a real dependency graph and reviewed global inputs. Include edited tests,
-transitive consumers, migrations, schemas/generated clients, shared fixtures,
-lockfiles and runtime/compiler/CI configuration. A missing base, graph edge,
-malformed result or unexplained empty selection forces FULL or a failed guard.
+Keep a cheap full PR suite if selection would not help. If selecting, use a real
+dependency graph and document FULL triggers. Unknown base, graph or coverage and
+high-risk changes (e.g. auth, privacy, payments, schema/migrations and CI/selector
+policy) force FULL. Map shared contracts/fixtures, lockfiles, generated clients
+and runtime/compiler config; use FULL when that mapping is unproven. Include
+edited tests and transitive consumers. Malformed results or unexplained empty
+selection force FULL or a failed guard.
 
 Prove the failure path with actual execution in a disposable branch/fixture:
 
@@ -161,22 +204,28 @@ outcomes do not prove actual command/transport wiring. Keep the real queue FULL.
 
 ## Local enforcement
 
-When requested and applicable, install a pre-push hook using the repository's existing hook manager, or a
-reviewed executable hook with `core.hooksPath`. Preserve existing hooks. Verify its
-installation, executable mode and failure propagation; documentation alone is not
-enforcement. Keep installation reversible and report any local capability blocker.
+Preserve the existing working manager or executable hooks and their behavior.
+When requested, prefer real hk staged/pre-push hooks only if the repository
+needs a manager and measurement supports it. A suggested config is not an
+installed hook. Verify installation, executable mode and failure propagation,
+and keep changes reversible. See [hk source](06-official-sources.md#strict-profile-tool-checks-2026-11-22).
 
-Pass changed paths as NUL-delimited data/argv, never shell-expanded text. Handle
-new branches, force pushes, renames/deletions and missing bases conservatively.
-Use the repository's verified formatter/linter on changed applicable files and its
-checker on affected projects/dependents. Checking only changed TS files misses reverse consumers.
-Require <9 s including process startup. CI repeats authoritative checks because Git
-hooks can be bypassed; never use hook execution as proof of merge eligibility.
+On pre-commit, format and lint staged applicable files. On pre-push, run the
+relevant authoritative CI checks at the same pins and settings; include affected
+projects and reverse dependents where required. Pass paths as NUL-delimited
+data/argv, never shell-expanded text. Handle new branches, force pushes,
+renames/deletions and missing bases conservatively. Measure full pre-push wall
+time against the target, including startup. CI stays authoritative because
+hooks can be bypassed.
 
 ## Budget enforcement
 
-Use a monotonic guard such as `run_budget.py --seconds 60 --label tests -- COMMAND`
-for a command. It must execute once, preserve failures and fail at equality. On POSIX, supervise an owned process group; commands must not daemonize or escape it. Windows fallback controls only the direct child, so use an appropriate supervisor when descendant cleanup is required. It measures work duration, not waiting/setup or fleet p95.
+Use `run_budget.py --seconds BOUND --label STAGE -- COMMAND` with a proven
+substituted bound. It executes once, preserves failures and fails at equality.
+On POSIX, supervise an owned process group; commands must not daemonize or
+escape it. Windows fallback controls only the direct child; use an appropriate
+supervisor when descendant cleanup is required. This measures work, not waiting,
+setup or fleet p95.
 Keep provider job timeouts bounded as a final containment limit; never widen them
 to hide a regression. A timeout is red even if a signal handler exits zero.
 
@@ -186,6 +235,8 @@ successful outcomes. Fail missing/malformed evidence; a zero-exit report writer 
 not a passing evaluator. A live verifier cannot certify its own future completion:
 mark that duration pending, guard its command, and audit its completion afterwards.
 Queues with no assigned runner cannot self-timeout; monitor their age separately.
+Do not enforce a duration from an unproven proxy. Once an evidence-backed gate is
+active, missing required evidence blocks it; it does not exempt the job.
 
 Evaluate rolling p50/p95 and cache targets from a sufficiently sized comparable
 cohort without deleting slow/failed observations. Do not turn synthetic fixtures,
@@ -193,23 +244,23 @@ local timings, success-only samples or an unenforced JSON policy into a CI SLO c
 
 ## Small PRs and cost
 
-Keep runner migration, tool replacement, selection and isolation as separate PRs.
-Before each switch, list what old and new uniquely detect, any missing behavior,
-versions, identical workload, warm/cold timings and real CI links. Explain every
-retained legacy tool with measured incompatibility/cost; accept a newer faster
-replacement only after the same evidence. Report incomplete evidence plainly.
+Keep one small, authorized PR per intervention: runner migration, tool replacement,
+selection and isolation ship separately. Compare exact old/new versions on the
+same source and workload, warm and cold. List unique detection, missing behavior,
+required fallbacks and real run links. Report incomplete evidence as unknown.
 
 Collect account/app activation, permissions, secrets and incremental spend in one
 list after completing everything else. A normal Blacksmith runner migration does
 not inherently require a PAT or a new application secret. Quote current rates,
 remaining organization-wide allowance, billing granularity and monthly volume.
 
-Estimate compute from **all billable job time**, including full queue runs, main
-cache seeding and verification, then add storage/idle/optional services. Do not
-multiply the critical path by one price. Public GitHub standard hosted compute is
-free; Blacksmith public-repo status alone does not grant unlimited free service.
-Its listed base x64 price is $0.004/min with 3,000 2-vCPU-equivalent free minutes per
-organization/month (checked 2026-11-20); verify larger-machine rates and allowances
-in the account. Do not assume that allowance is unused or that an OSS application
-is approved. Finish with before/after PR time, runner time and cost, with sample
-sizes and an explicit distinction between actual billing and estimates.
+Apply native SKU rounding/rates per billable item before summing. Include **all
+billable cohorts**: queue, main, verification, failures and reruns where billed.
+Separate runner time, native units and money; a quota multiplier is not a price.
+Add material storage, transfer and idle costs, and list self-hosted equipment
+and operator costs apart from vendor bills. Do not multiply the critical path
+by one price. Public GitHub standard hosted compute is free; a Blacksmith public
+repository is not automatically free. Check the [dated price sources](06-official-sources.md#strict-profile-tool-checks-2026-11-22)
+and actual account rates and allowances. Finish with before/after PR wall time,
+runner usage, native billable units and cost, with sample sizes; distinguish bills
+from estimates and mark missing prices, allowances or after-results unknown.

@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="650" viewBox="0 0 800 650" role="img" aria-labelledby="title desc">
+  <title id="title">Reported CI results: before and after</title>
+  <desc id="desc">Screenshot transcription of CI timings and flaky-test retries. Reported speedup: 6× median, 13× p95. All values are also in the README text table.</desc>
+  <rect x="0.5" y="0.5" width="799" height="649" rx="19" fill="#111b2a" stroke="#35455a"/>
+  <g font-family="system-ui, -apple-system, sans-serif">
+    <text x="40" y="44" fill="#91efbb" font-size="16" font-weight="700" letter-spacing="2">REPORTED CI RESULTS</text>
+    <text x="40" y="90" fill="#f1f5f9" font-size="39" font-weight="700" letter-spacing="-1">Before and after</text>
+
+    <path d="M40 158H760 M40 244H760 M40 361H760 M40 517H760" fill="none" stroke="#35455a"/>
+    <rect x="24" y="573" width="752" height="59" rx="12" fill="#233247"/>
+
+    <g font-size="18" font-weight="700" fill="#aebed0">
+      <text x="40" y="142">Metric</text>
+      <text x="496" y="142" text-anchor="end">Before</text>
+      <text x="760" y="142" text-anchor="end" fill="#91efbb">After</text>
+    </g>
+    <g font-size="23" fill="#f1f5f9">
+      <g font-weight="700">
+        <text x="40" y="192">Full CI run, median</text>
+        <text x="496" y="192" text-anchor="end" fill="#c9d5e3">9 min 21 s</text>
+        <text x="760" y="192" text-anchor="end" fill="#91efbb">1 min 30 s</text>
+      </g>
+      <g font-weight="700">
+        <text x="40" y="231">Full CI run, slow runs (p95)</text>
+        <text x="496" y="231" text-anchor="end" fill="#c9d5e3">20 min 1 s</text>
+        <text x="760" y="231" text-anchor="end" fill="#91efbb">1 min 34 s</text>
+      </g>
+      <g>
+        <text x="40" y="270">End-to-end tests</text>
+        <text x="496" y="270" text-anchor="end" fill="#c9d5e3">6 min 48 s</text>
+        <text x="760" y="270" text-anchor="end" fill="#91efbb" font-weight="700">42 s</text>
+      </g>
+      <g>
+        <text x="40" y="309">Backend tests</text>
+        <text x="496" y="309" text-anchor="end" fill="#c9d5e3">5 min 58 s</text>
+        <text x="760" y="309" text-anchor="end" fill="#91efbb" font-weight="700">28 s</text>
+      </g>
+      <g>
+        <text x="40" y="348">Frontend tests</text>
+        <text x="496" y="348" text-anchor="end" fill="#c9d5e3">4 min 19 s</text>
+        <text x="760" y="348" text-anchor="end" fill="#91efbb" font-weight="700">33 s</text>
+      </g>
+      <g>
+        <text x="40" y="387">Lint</text>
+        <text x="496" y="387" text-anchor="end" fill="#c9d5e3">~30 s</text>
+        <text x="760" y="387" text-anchor="end" fill="#91efbb" font-weight="700">0.7 s</text>
+      </g>
+      <g>
+        <text x="40" y="426">Typecheck</text>
+        <text x="496" y="426" text-anchor="end" fill="#c9d5e3">~12 s</text>
+        <text x="760" y="426" text-anchor="end" fill="#91efbb" font-weight="700">0.3 s</text>
+      </g>
+      <g>
+        <text x="40" y="465">Format check</text>
+        <text x="496" y="465" text-anchor="end" fill="#c9d5e3">7 s</text>
+        <text x="760" y="465" text-anchor="end" fill="#91efbb" font-weight="700">0.09 s</text>
+      </g>
+      <g>
+        <text x="40" y="504">Dependency install</text>
+        <text x="496" y="504" text-anchor="end" fill="#c9d5e3">~30 s</text>
+        <text x="760" y="504" text-anchor="end" fill="#91efbb" font-weight="700">2 s</text>
+      </g>
+      <g>
+        <text x="40" y="543">Retries for flaky tests</text>
+        <text x="496" y="543" text-anchor="end" fill="#c9d5e3">yes</text>
+        <text x="760" y="543" text-anchor="end" fill="#91efbb" font-weight="700">none</text>
+      </g>
+      <g font-weight="700">
+        <text x="40" y="611">Speedup</text>
+        <text x="496" y="611" text-anchor="end" fill="#c9d5e3">—</text>
+        <text x="760" y="611" text-anchor="end" fill="#91efbb" font-size="24">6× median, 13× p95</text>
+      </g>
+    </g>
+  </g>
+</svg>

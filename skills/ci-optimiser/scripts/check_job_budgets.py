@@ -23,8 +23,11 @@ and MUST be bounded externally by run_budget.py/job timeout. Optional
 --current-job-setup accepts a ci-current-job-setup/1 record written by the trusted
 workflow during its first work step, after successful setup. It binds job, run,
 head and attempt, and uses observed_at as a conservative setup upper bound when
-the live API timeline lags. It never replaces an observed failure or changes
-completed-job validation. This caller-supplied record is not an attestation.
+the live API timeline lags. If the current job still reports queued with an empty
+step list, created_at to observed_at bounds both waiting and setup. In this live
+mode, a dependency's in_progress status can lag a successful conclusion; it
+still needs complete successful step and timing evidence. Neither case overrides
+an observed failure. This caller-supplied record is not an attestation.
 Without it, setup still requires complete API evidence. No API calls, writes,
 retries, percentile certification, or proof of branch/merge-queue rules occurs.
 Exit 0: observed budgets pass (possibly with explicit pending current-job limits);
@@ -237,7 +240,8 @@ def validate_approval_history(history, attempt, run_id, head_sha, *, repository,
             "source": "supplied_api_receipts", "source_authentication": "collector_responsibility"}
 
 
-def check_job(job, limits, current, current_setup=None, *, expected_attempt=1):
+def check_job(job, limits, current, current_setup=None, *, expected_attempt=1,
+              allow_lagging_completion=False):
     result = {"name": job["name"], "measurements": {key: "unknown" for key in METRICS},
               "limits": {key: limits[key] for key in METRICS}, "pending": [], "errors": []}
     try:
@@ -245,22 +249,37 @@ def check_job(job, limits, current, current_setup=None, *, expected_attempt=1):
             raise ValueError("job attempt does not match the verified execution attempt")
         if not {"conclusion", "completed_at"} <= job.keys():
             raise ValueError("job completion evidence is missing")
-        live = current and job.get("status") == "in_progress"
+        state = job.get("status")
+        queued = current and current_setup is not None and state == "queued" and job.get("steps") == []
+        live = current and (state == "in_progress" or queued)
         if current_setup is not None and not live:
             raise ValueError("local setup evidence applies only to the live current job")
-        if not live and (job.get("status") != "completed" or job.get("conclusion") != "success"):
+        lagging_completion = not current and allow_lagging_completion and state == "in_progress"
+        if not live and ((state != "completed" and not lagging_completion) or job.get("conclusion") != "success"):
             raise ValueError("job must complete successfully; skipped, failed, cancelled or incomplete jobs cannot pass")
         if live and (job.get("conclusion") is not None or job.get("completed_at") is not None):
             raise ValueError("current job has contradictory completion evidence")
         created = timestamp(job.get("created_at"), "job created_at")
-        started = timestamp(job.get("started_at"), "job started_at")
+        if queued:
+            # A queued timestamp may be null or only a placeholder. Do not use
+            # it to undercount waiting: both intervals are bounded by creation
+            # to the trusted first-work observation.
+            if "started_at" not in job:
+                raise ValueError("job started_at field is missing")
+            if job["started_at"] is not None:
+                reported_start = timestamp(job["started_at"], "job started_at")
+                if not created <= reported_start <= current_setup["observed_s"]:
+                    raise ValueError("queued job timestamp contradicts the local boundary")
+            started = created
+        else:
+            started = timestamp(job.get("started_at"), "job started_at")
         finished = None if live else timestamp(job.get("completed_at"), "job completed_at")
         if started < created or (finished is not None and finished < started):
             raise ValueError("job timestamps are out of order")
         if current_setup is not None and current_setup["observed_s"] < started:
             raise ValueError("local setup timestamp precedes the API job start")
         steps = job.get("steps")
-        if not isinstance(steps, list) or not steps:
+        if not isinstance(steps, list) or (not steps and not queued):
             raise ValueError("step evidence is missing")
         by_name, previous_number, previous_start, unfinished = {}, 0, started, False
         for step in steps:
@@ -294,22 +313,24 @@ def check_job(job, limits, current, current_setup=None, *, expected_attempt=1):
                 raise ValueError("step timestamps are out of order or outside the job")
             previous_start = begin
             by_name[step["name"]] = (begin, end, state)
-        marker = by_name.get(limits["setup_end_step"])
-        if marker is None:
-            raise ValueError("setup_end_step must exist")
-        if current_setup is None and marker[2] != "completed":
-            raise ValueError("setup_end_step must exist and have completed successfully")
-        work = [by_name.get(name) for name in limits["work_steps"]]
-        if any(step is None for step in work):
-            raise ValueError("an explicit work step is missing")
-        # The first work step is the earliest declared work step in execution
-        # order, not whichever later work step happens to have a timestamp.
-        first_name, first_step = next((name, step) for name, step in by_name.items() if name in limits["work_steps"])
-        first_work = first_step[0]
-        if first_work is None and current_setup is None:
-            raise ValueError("first work start is unknown")
-        if marker[1] is not None and first_work is not None and marker[1] > first_work:
-            raise ValueError("setup marker must complete before work starts")
+        if queued:
+            first_name, first_work = limits["work_steps"][0], None
+        else:
+            marker = by_name.get(limits["setup_end_step"])
+            if marker is None:
+                raise ValueError("setup_end_step must exist")
+            if current_setup is None and marker[2] != "completed":
+                raise ValueError("setup_end_step must exist and have completed successfully")
+            work = [by_name.get(name) for name in limits["work_steps"]]
+            if any(step is None for step in work):
+                raise ValueError("an explicit work step is missing")
+            # Use execution order, not a later work step with a timestamp.
+            first_name, first_step = next((name, step) for name, step in by_name.items() if name in limits["work_steps"])
+            first_work = first_step[0]
+            if first_work is None and current_setup is None:
+                raise ValueError("first work start is unknown")
+            if marker[1] is not None and first_work is not None and marker[1] > first_work:
+                raise ValueError("setup marker must complete before work starts")
         if current_setup is not None:
             if (current_setup["setup_end_step"] != limits["setup_end_step"]
                     or current_setup["first_work_step"] != first_name):
@@ -330,7 +351,11 @@ def check_job(job, limits, current, current_setup=None, *, expected_attempt=1):
         else:
             setup = first_work - started
         measurements = result["measurements"]
-        measurements.update(waiting_s=started - created, setup_s=setup)
+        measurements.update(waiting_s=setup if queued else started - created, setup_s=setup)
+        if queued:
+            result["waiting_evidence"] = result["setup_evidence"].copy()
+        if lagging_completion:
+            result["completion_evidence"] = "successful_timeline_with_lagging_status"
         if live:
             result["pending"] = ["running_s", "runner_s"]
             measurements.update(running_s="pending", runner_s="pending")
@@ -343,7 +368,9 @@ def check_job(job, limits, current, current_setup=None, *, expected_attempt=1):
                 result["errors"].append(f"{metric} meets or exceeds its strict limit")
     except ValueError as exc:
         result["errors"].append(str(exc))
-    if result["errors"] or (current and job.get("status") == "in_progress"):
+    if result["errors"] or (current and job.get("status") in ("queued", "in_progress")):
+        state = job.get("status")
+        result["job_status"] = state if state in ("queued", "pending", "in_progress", "completed") else "invalid"
         # Step names can contain shell commands. Emit only bounded state labels
         # and timestamp-presence flags, never names, commands, env or raw values.
         steps = job.get("steps")
@@ -403,7 +430,8 @@ def verify(payload, policy, attempt=1, current_job=None, *, expected_run_id=None
             errors.append("an unexpected job is absent from the exact policy")
             continue
         results.append(check_job(job, expected[name], name == current_job,
-                                 local_setup if name == current_job else None, expected_attempt=attempt))
+                                 local_setup if name == current_job else None, expected_attempt=attempt,
+                                 allow_lagging_completion=local_setup is not None))
     if len(runs) != 1 or len(heads) != 1:
         errors.append("job run_id/head_sha provenance is inconsistent or unavailable")
     if bound and (runs != {expected_run_id} or heads != {expected_head_sha.lower()}):
