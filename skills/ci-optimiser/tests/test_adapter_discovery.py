@@ -12,7 +12,7 @@ import discover_repo
 class AdapterDiscoveryTests(unittest.TestCase):
     def discover(self, files):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             for name, content in files.items():
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)

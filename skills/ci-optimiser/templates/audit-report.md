@@ -1,6 +1,6 @@
 # CI audit: <repo> (<date>)
 
-Mode: OBSERVE · Window: <from> → <to> · Sample: <n> runs (<m> with jobs) · Source: `.ci-audit/metrics.json`
+Mode: OBSERVE · Window: <from> → <to> · Sample: <n> runs (<m> with jobs) or static-only · Source: <available config, policy and telemetry>
 
 ## Answer
 
@@ -10,7 +10,7 @@ Mode: OBSERVE · Window: <from> → <to> · Sample: <n> runs (<m> with jobs) · 
 
 | Item | Value | Evidence |
 |---|---|---|
-| CI provider(s) | | `discovery.json` |
+| CI provider(s) and coverage | <one row per provider: observed active / configured but unconfirmed / unknown; measured / snapshot / static> | <files, provider settings or run IDs> |
 | Languages / package manager | | |
 | Monorepo graph | none / Nx / Turbo / … | |
 | Test runners | | |
@@ -70,19 +70,25 @@ history: <counts and effect>. Normalized dependency graph: <source/expansion pro
 
 Critical path: `<job A> → <job B> → <job C>` (see `critical-path.md`). Gating job: `<name>`, last in <k>/<n> runs, required: yes / no / unknown. Config changed in window: no / yes → `--since <date>`.
 
-## Seven modules
+## Live research
+
+| Public component | Current → candidate | Version/support and compatibility | Source URL and date checked | Decision / unresolved gap |
+|---|---|---|---|---|
+| <tool, feature, runner or rates> | | | | |
+
+Cost basis: <currency, period, target plan, runner types, billing unit, rounding,
+actual billing or dated public estimate, allowances, volume, storage/idle/other fees>.
+Keep runner minutes, billable units and monetary cost separate.
+
+## Ranked recommendations
 
 | # | Module | Applicable | Observed bottleneck | Δ wall-clock p50/p95 (on path / below floor) | Δ runner-min/mo | Evidence tier | Correctness/security risk | Effort | Cost delta | Next proof |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | Fast runners | | | | | | | | | |
-| 2 | Native lint/typecheck | | | | | | | | | |
-| 3 | Machines / Vitest reuse | | | | | | | | | |
-| 4 | Caching / blobless clone | | | | | | | | | |
-| 5 | Parallel jobs | | | | | | | | | |
-| 6 | Affected tasks | | | | | | | | | |
-| 7 | Local hooks | | | | | | | | | |
+| 1 | <highest-impact applicable change> | | | | | <measured / estimated / hypothesis; confidence> | | | | |
+| 2 | <next change or keep current> | | | | | | | | | |
 
-Combined wall-clock saving (stacked model, not the sum of rows): <value>; method: <how the path was recomputed>. Runner-minute rows add.
+Combined wall-clock saving: <recomputed path or unknown, not the sum of rows>.
+Recompute total runner minutes separately; don't double-count shared work.
 
 ## Evidence identity and release eligibility
 

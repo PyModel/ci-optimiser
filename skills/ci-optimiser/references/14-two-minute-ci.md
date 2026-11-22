@@ -1,8 +1,8 @@
 # Strict performance contract
 
-Reviewed 2026-11-20. Apply this contract before older examples. These are optimization
-requirements, not vendor guarantees or measurements. See [tool migration](15-toolchain-migration.md)
-for current commands and compatibility traps; [sources](06-official-sources.md) records primary evidence.
+Reviewed 2026-11-20. The budgets and verification gates take precedence over older
+examples. They are not vendor guarantees or measurements. Choose stack/provider
+optimizations with [live research](16-live-research.md) and target evidence.
 
 ## Contents
 
@@ -23,7 +23,7 @@ local pre-push path <9 s. Require >95% exact PR dependency-cache hits where that
 cache is applicable. Define build, formatting, reporting and total-job budgets
 from the measured path before modifying them; do not leave unbounded work.
 
-Retrieve the last 150 runs, all paginated jobs and attempts, including failures,
+Retrieve up to the last 150 runs by default (configurable), paginating jobs and attempts, including failures,
 cancellations and incomplete runs. Retention or fewer available runs limits the
 sample; never fabricate the remainder. Split event, workflow/config era, runner,
 cache state and first attempt versus rerun. Keep a failed original attempt even
@@ -81,15 +81,17 @@ retroactively. If activation is blocked, finish the code/PR and report the exact
 
 ## Runner and setup changes
 
-Prefer Blacksmith for every repository-controlled job, including 5-second aggregates.
-Install/verify its organization GitHub App access before changing labels. A runner
-label is not proof of capacity. Verify images, architecture, isolation, fork trust,
-permissions and cancellation; no workload goes to an unreviewed persistent runner.
-Use 8-vCPU machines as the starting test-shard experiment, and smaller approved
-machines for brief jobs. Measure queue plus total time; do not promise <10 s queues.
+Compare the current pool, native sizing/capacity changes and compatible providers
+only when queue or execution evidence warrants it. On GitHub, Blacksmith is one
+candidate; verify organization GitHub App access before changing its labels.
+A label is not capacity. Verify images, architecture, isolation, fork trust,
+permissions and cancellation. Use larger workers for CPU-bound tests only after
+measuring scaling; keep brief aggregate jobs where queue time and cost are best.
+Measure queue plus total time; do not promise <10 s queues.
 
-Seed dependency caches from trusted main. For JS, benchmark caching `node_modules`
-itself, not only download stores. Require exact OS/image, arch, runtime ABI/version,
+Seed trusted dependency caches from trusted main where supported. For JS,
+compare exact-key `node_modules`, package stores and cold installs when setup
+dominates. Require exact OS/image, arch, runtime ABI/version,
 package-manager version, lockfile, workspace layout, install flags, trusted lifecycle
 settings and patch/config compatibility. Do not restore a broad old dependency tree
 as valid without a frozen reconciliation. Never put secrets in caches.
@@ -100,7 +102,7 @@ Lockfile changes legitimately miss; report them, seed after trusted integration,
 never reuse incompatible dependencies to improve the rate. A cold path must work.
 Trusted jobs must not consume artifacts or cache entries writable by untrusted PRs.
 
-Use a full-history partial clone by default:
+When jobs need full history, benchmark a compatible partial clone:
 
 ```yaml
 with:
@@ -111,7 +113,7 @@ with:
 
 For direct Git use `git clone --filter=blob:none URL`; do not use `--depth=0`.
 Measure deferred blob reads as part of the entire job, not only checkout. Keep shallow
-or another strategy only with a measured reason and proof all required history exists.
+or another strategy when it is faster or cheaper and all required history exists.
 Do not add dependency caches to a dependency-free repository merely to fill a checklist.
 
 ## Parallel work and test reuse
@@ -122,7 +124,7 @@ of the slowest job into independent required jobs; never beyond main admission.
 Check the aggregate on failure, skip, cancellation, missing matrix legs and missing
 reports. Avoid setup duplication that costs more than the parallelism saves.
 
-Buy cores before more shards, within approved spend. Measure CPU, memory, I/O and
+Compare more cores with more shards within approved spend. Measure CPU, memory, I/O and
 database contention. Allocate workers against actual available cores and memory;
 leave capacity for services. Balance shards by measured file duration, preserve the
 complete inventory, then randomize order within each shard with a recorded seed.
@@ -159,15 +161,15 @@ outcomes do not prove actual command/transport wiring. Keep the real queue FULL.
 
 ## Local enforcement
 
-Install an actual pre-push hook using the repository's existing hook manager, or a
+When requested and applicable, install a pre-push hook using the repository's existing hook manager, or a
 reviewed executable hook with `core.hooksPath`. Preserve existing hooks. Verify its
 installation, executable mode and failure propagation; documentation alone is not
 enforcement. Keep installation reversible and report any local capability blocker.
 
 Pass changed paths as NUL-delimited data/argv, never shell-expanded text. Handle
 new branches, force pushes, renames/deletions and missing bases conservatively.
-Run Oxfmt/Oxlint on changed applicable files and tsrs or the verified checker on
-affected projects/dependents. Checking only changed TS files misses reverse consumers.
+Use the repository's verified formatter/linter on changed applicable files and its
+checker on affected projects/dependents. Checking only changed TS files misses reverse consumers.
 Require <9 s including process startup. CI repeats authoritative checks because Git
 hooks can be bypassed; never use hook execution as proof of merge eligibility.
 

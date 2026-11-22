@@ -44,7 +44,7 @@ A timeout bounds a stuck process; it is not a feedback budget. Enforce measured 
 2. Verify and configure the required full-suite merge queue/train. Document the evidence preceding PR feedback, queue admission, artifact eligibility and release; report unavailable enforcement as a blocker.
 3. Map the diff through verified dependencies and change-to-check contracts. Run relevant category 2 tests on PRs; treat security/authentication, payments, schema/migrations, shared contracts, generated inputs, CI/selector policy and other declared high-risk changes conservatively. High risk or unknown base/graph/coverage/confidence forces FULL before integration.
 4. Retain category 1 rules and every uniquely required test at its approved boundary. Include transitive dependents and non-code inputs. Do not infer relevance from filenames alone or skip integration tests solely because they are slow.
-5. Optimize the measured required path using the seven modules. Install a measured <9-second pre-push hook for applicable checks; CI remains authoritative and hook bypass never counts as proof.
+5. Optimize the measured required path using the seven modules. If a local hook is applicable and requested, verify it runs in <9 seconds; CI remains authoritative and hook bypass never counts as proof.
 6. Validate selected-versus-full equivalence and gate failures in shadow mode before migrating. If safe placement cannot meet the budget, keep the protection and report the trade-off.
 7. Require full integrated evidence plus category 4 evidence for the exact release artifact. A later lane cannot retroactively protect an earlier boundary.
 

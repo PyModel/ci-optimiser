@@ -1,9 +1,10 @@
 # Repository artwork
 
-- `banner.svg` preserves the original compact banner.
+- `banner.svg` is the compact README banner.
+- `ci-timing-case-study.svg` is the README chart for the owner-reported timings.
 - `social-preview.svg` is the editable source for the link-sharing card.
-- `social-preview.png` is the opaque 1280 × 640 export used as the README banner
-  and uploaded in **Repository Settings → General → Social preview**.
+- `social-preview.png` is the opaque 1280 × 640 export for
+  **Repository Settings → General → Social preview**.
 
 The card shares the banner's colors and pipeline/checkmark motif. Its text states
 the skill's purpose without presenting target timings as measured results.

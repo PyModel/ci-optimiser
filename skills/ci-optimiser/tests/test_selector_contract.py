@@ -160,7 +160,7 @@ class SelectorControlInputTest(unittest.TestCase):
     @unittest.skipUnless(os.name == "posix", "symlink fixture uses POSIX semantics")
     def test_map_alias_and_resolved_path_are_both_protected(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             real = root / "selection.json"
             real.write_text(json.dumps(BROAD_MAP), encoding="utf-8")
             alias = root / "selection.link"
@@ -224,15 +224,17 @@ class SelectorGitContractTest(unittest.TestCase):
             with self.subTest(raw=raw), self.assertRaises(ValueError):
                 selector.parse_git_changes(raw)
 
-    @unittest.skipUnless(os.name == "posix", "Git byte-filename fixture requires POSIX")
+    @unittest.skipUnless(os.name == "posix", "Git raw-byte path fixture runs on POSIX")
     def test_non_utf8_git_filename_falls_back_without_traceback(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             init_repo(root)
-            filename = os.fsencode(root / "packages/api") + b"/bad-\xff.txt"
-            with open(filename, "wb") as output:
-                output.write(b"nonsecret fixture\n")
-            git(root, "add", ".")
+            # Insert the path into Git's index so this also exercises the real
+            # diff on filesystems (e.g. APFS) that forbid non-UTF-8 paths.
+            blob = subprocess.check_output(
+                ["git", "rev-parse", "HEAD:packages/ui/original.txt"], cwd=root).strip()
+            subprocess.run(["git", "update-index", "-z", "--index-info"], cwd=root,
+                           input=b"100644 " + blob + b"\tpackages/api/bad-\xff.txt\0", check=True)
             git(root, "commit", "-qm", "byte filename")
             changed, why = selector.git_changed("HEAD~1", "HEAD", root)
             self.assertIsNone(changed)
