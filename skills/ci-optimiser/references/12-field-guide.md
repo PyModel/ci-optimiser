@@ -56,10 +56,15 @@ each script's `--help` before using it.
 
 ### A. Diagnose and prioritize (no modifications)
 
-1. Complete the four-category current/proposed map and policy decision, then reconstruct the DAG; separate queue, setup, steps and critical path. GitHub's jobs API gives timings; the `needs` edges come from YAML. Preserve existing gates while unknowns are resolved.
-2. Screen the seven modules and fill the ranked recommendations table. Name why
-   high-profile but inapplicable options don't fit.
-3. Order by **measured saving in the biggest bucket on the required path**, with correctness first; do not impose a tool-migration order before measurement. [Measurement guide](04-measurement-benchmarking.md).
+1. Complete the four-category map and policy decision, then reconstruct the DAG.
+   Use the [PR feedback budget](08-validation-architecture.md#pr-feedback-budget)
+   to separate outcome cohorts and waiting causes. Preserve existing gates while
+   unknowns are resolved.
+2. Fill the [Option screen](../templates/audit-report.md#option-screen) for every
+   family; rank only material choices against keeping or tuning the incumbent.
+3. Rank required-path gains by evidenced impact, with correctness first. Keep
+   redistribution and cost-only effects distinct. Static leads need a read-only
+   next measurement, not a migration order. [Measurement guide](04-measurement-benchmarking.md).
 4. Run the [pre-publish review](03-security-correctness.md#before-publishing-a-report), then deliver the report and proposed sequence. If scoped implementation is already authorized, continue; otherwise stop before the unapproved action.
 
 ### B. Benchmark one change
@@ -82,7 +87,14 @@ each script's `--help` before using it.
 
 ### D. Monitor, adapt, roll back
 
-Track p50/p95 push→green, queue/setup breakdown, p95 critical path, cache efficiency, reruns, skipped-vs-full selection, cost per merged PR, false greens, escaped defects and release provenance. Re-assess after each change: bottlenecks move. When another job becomes the gate, report the new gate, not the old job's gain as wait removed. Enforce waiting <10 s, setup <30 s, lint/typecheck <5 s and test work <60 s per shard. Investigate any retry, false green or threshold breach; report rolling PR p50/p95 separately. Rollback triggers: [measurement guide](04-measurement-benchmarking.md#monitoring-and-rollback).
+Track p50/p95 first-execution PR feedback (by outcome) and first-push-to-green
+separately, plus queue/setup breakdown, p95 critical path, cache efficiency,
+reruns, skipped-vs-full selection, cost per merged PR, false greens, escaped
+defects and release provenance. Re-assess after each change: bottlenecks move.
+Report the new gate, not the old job's gain as wait removed. Enforce runner wait
+<10 s, setup <30 s, lint/typecheck <5 s and test work <60 s per shard. Investigate
+any retry, false green or threshold breach. Rollback triggers:
+[measurement guide](04-measurement-benchmarking.md#monitoring-and-rollback).
 
 Check the agreed PR budget and category-3 completion/freshness independently. Give full pre-main queue runs unique concurrency groups; post-push coalescing cannot replace them. A failed full run blocks eligibility for that commit; follow the repo's fix-forward/revert policy and incident owner. Missing rollout telemetry pauses promotion.
 
@@ -111,4 +123,6 @@ AUDIT/                      # outside the target worktree
   rollback-plan.md
 ```
 
-The report states the detected stack, four-category plan, PR budget, full-suite and release contracts, top bottleneck, seven-module status, risks, baselines, confidence and limits, ordered PR plan, acceptance criteria, no-change findings, cost trade-offs and rollback. Template: [audit report](../templates/audit-report.md). Worked shapes: [examples](05-worked-examples.md).
+The [audit report](../templates/audit-report.md) records the stack, gates, timing
+and cost evidence, all seven dispositions, the material shortlist, and one
+reversible next action. Worked shapes: [examples](05-worked-examples.md).

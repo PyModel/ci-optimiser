@@ -1,4 +1,4 @@
-"""Packaging checks: frontmatter, size, and every local Markdown link + anchor resolves."""
+"""Packaging and installed report contract checks."""
 from __future__ import annotations
 
 import re
@@ -117,6 +117,45 @@ class SkillDocsTest(unittest.TestCase):
         self.assertIn("actual release host", release)
         self.assertIn("../references/17-release-automation.md", release)
         self.assertIn("KEEP / ADOPT / FIX / NOT APPLICABLE", release)
+
+    def test_audit_report_screens_options_and_separates_feedback_outcomes(self):
+        report = (ROOT / "templates/audit-report.md").read_text()
+        sections = dict(re.findall(r"^## ([^\n]+)\n(.*?)(?=^## |\Z)", report, re.M | re.S))
+        screen = sections.get("Option screen", "")
+        families = re.findall(r"^\| ([^|]+?) \|.*$", screen, re.M)
+        self.assertCountEqual(families, [
+            "Family", "Faster runner", "Lint/typecheck", "Workers/shards",
+            "Cache/checkout", "Parallel jobs/steps", "Affected tasks", "Hooks",
+        ])
+        for field in ("Disposition", "Reason / next proof", "keep", "not applicable"):
+            self.assertIn(field, screen)
+        self.assertIn("Ranked recommendations", sections)
+        self.assertIn("Next reversible action", sections)
+
+        feedback = sections["PR feedback objective"]
+        for metric, markers in {
+            "Latest-revision PR feedback": ("exact push receipt", "trustworthy success or failure", "first execution"),
+            "First-push PR journey": ("first push", "green"),
+            "Pre-main queue validation": ("exact combined candidate", "full suite"),
+            "Post-push observations": ("exact main SHA", "supplemental"),
+        }.items():
+            with self.subTest(metric=metric):
+                row = re.search(rf"(?m)^\| {metric} \|(.+)$", feedback)
+                self.assertIsNotNone(row)
+                for marker in markers:
+                    self.assertIn(marker, row[1])
+        for marker in ("approval wait", "dependency wait", "runner wait", "diagnostic", "censored"):
+            self.assertIn(marker, feedback.casefold())
+        self.assertIn("../references/16-live-research.md", sections["Live research"])
+        self.assertIn("native billable units", sections["Live research"])
+
+        sources = (ROOT / "references/06-official-sources.md").read_text()
+        holds = sources.split("## PR approval-only attempt evidence (2026-11-20)\n", 1)[1].split("\n## ", 1)[0]
+        for endpoint in (
+            "workflow-runs#get-a-workflow-run-attempt",
+            "workflow-jobs#list-jobs-for-a-workflow-run-attempt",
+        ):
+            self.assertIn(endpoint, holds)
 
     def test_bundle_entrypoint_license_and_source_scaffolding(self):
         self.assertEqual(list(ROOT.rglob("SKILL.md")), [ROOT / "SKILL.md"])

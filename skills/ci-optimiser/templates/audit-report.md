@@ -59,16 +59,22 @@ Queue controls: <full inventory, no test-result cache replay, unique concurrency
 
 ## PR feedback objective
 
-Chosen objective: latest-revision **p50 <120 s / p95 <180 s**. Report first-push journey separately. Require wait <10 s, setup <30 s, lint/types <5 s, tests <60 s/shard and local hook <9 s. Enforced at-limit/over-budget work fails. Targets are never measured baselines.
+Chosen objective: latest-revision **p50 <120 s / p95 <180 s**. Require runner wait <10 s, setup <30 s, lint/types <5 s, tests <60 s/shard and local hook <9 s. Enforced at-limit/over-budget work fails. Targets are never measured baselines.
 
 | Metric | p50 | p95 | n / window | Start → finish / limitations |
 |---|---|---|---|---|
-| Latest-revision PR feedback | unknown | unknown | | exact push receipt → complete authoritative PR green for that current revision |
-| First-push PR journey | unknown | unknown | | first push in PR window → first complete green for a current revision, including repair/re-push delays |
-| Full integrated validation lag | unknown | unknown | | integration candidate/main event → full green, including queue and retries |
-| Unvalidated / failed / cancelled / superseded | | | | counts, oldest age; keep outside successful-only latency statistics |
+| Latest-revision PR feedback | unknown | unknown | | exact push receipt → first authoritative, trustworthy success or failure for that revision's first execution; report outcomes separately |
+| First-push PR journey | unknown | unknown | | first push in PR window → first trustworthy complete green for a current revision, including repair/re-push delays |
+| Pre-main queue validation | unknown | unknown | | queue entry → authoritative result for the exact combined candidate; separate queue wait and full suite execution |
+| Post-push observations | unknown | unknown | | main push receipt → supplemental result for the exact main SHA; not admission evidence |
+| Censored outcomes and breaches | | | | counts and oldest age of unvalidated, cancelled, superseded, unfinished and budget-aborted work |
 
-Timestamp provenance: <provider push events / explicitly named proxy / unavailable>. Queue, setup and reporting included: <yes / limitations>. Actual observations and target: <separate fields>. Required work that exceeds the budget safely: <keep it; next experiment or revised objective>.
+Timestamp provenance: <provider push/event receipt / named diagnostic proxy /
+unavailable>. Break out approval wait, dependency wait and runner wait without
+subtracting them from elapsed feedback; include dispatch, setup and final
+reporting. Retain earlier failures; execution retries are diagnostic only.
+For an approval-only predecessor, record the [required hold evidence](../references/08-validation-architecture.md#pr-feedback-budget);
+approval does not restart the clock.
 
 ## Baseline
 
@@ -81,7 +87,7 @@ history: <counts and effect>. Normalized dependency graph: <source/expansion pro
 |---|---|---|---|---|
 | analyzer push→green proxy | | | | approximation, not a substitute for the PR objective above |
 | slowest workflow wall | | | | |
-| each job: waiting | | | | created → started; separate dependency wait |
+| each job: runner wait | | | | use native timing where proven; name any created → started proxy and distinguish dependency and approval waits |
 | each job: setup | | | | explicit phase markers; missing evidence unknown |
 | each job: running | | | | preserve work inventory and outcomes |
 | each job: teardown/unattributed | | | | do not add overlapping percentiles |
@@ -97,23 +103,51 @@ Critical path: `<job A> → <job B> → <job C>` (see `critical-path.md`). Gatin
 
 ## Live research
 
+Follow [live research](../references/16-live-research.md). Use dated primary
+sources to compare only material alternatives with the incumbent and the smallest
+compatible tune.
+
 | Public component | Current → candidate | Version/support and compatibility | Source URL and date checked | Decision / unresolved gap |
 |---|---|---|---|---|
 | <tool, feature, runner or rates> | | | | |
 
-Cost basis: <currency, period, target plan, runner types, billing unit, rounding,
-actual billing or dated public estimate, allowances, volume, storage/idle/other fees>.
-Keep runner minutes, billable units and monetary cost separate.
+Cost basis: <plan/SKU, metered scope, native per-item rounding/rate, shared allowances,
+currency/period, matched volume and successful-merge denominator>. Report runner
+time, native billable units and money separately; distinguish actual billing from
+estimates. Include all billable cohorts (including failures and reruns) and material
+ancillary/self-hosted costs per the [cost contract](../references/14-two-minute-ci.md#small-prs-and-cost).
+Missing required inputs mean unknown cost or savings, not zero.
+
+## Option screen
+
+For each family record applicability and a disposition: **keep**, **tune**,
+**replacement candidate**, **insufficient evidence**, or **not applicable**.
+Do not mark missing evidence as not applicable. The
+[playbook](../references/02-optimization-playbook.md) governs adoption.
+
+| Family | Applicability | Disposition | Reason / next proof |
+|---|---|---|---|
+| Faster runner | | | <runner wait or execution bottleneck; capacity, scaling and cost evidence> |
+| Lint/typecheck | | | <addressable check time; framework and diagnostic/output parity> |
+| Workers/shards | | | <slowest shard, resource limits, isolation and complete reports> |
+| Cache/checkout | | | <setup/transfer cost, cold path, trust and needed history> |
+| Parallel jobs/steps | | | <independent required work after accounting for capacity, setup and transport> |
+| Affected tasks | | | <verified graph and FULL fallback vs a cheap full PR suite> |
+| Hooks | | | <requested, applicable and fast; CI stays authoritative> |
 
 ## Ranked recommendations
 
-| # | Module | Applicable | Observed bottleneck | Δ wall-clock p50/p95 (on path / below floor) | Δ runner-min/mo | Evidence tier | Correctness/security risk | Effort | Cost delta | Next proof |
-|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | <highest-impact applicable change> | | | | | <measured / estimated / hypothesis; confidence> | | | | |
-| 2 | <next change or keep current> | | | | | | | | | |
+Shortlist only material choices, including keep when it wins. Label each effect
+**observed**, **modelled** or **unknown**. Distinguish required-path acceleration,
+redistribution and cost-only savings. A static lead is not a measured gain.
+
+| # | Choice vs incumbent | Effect / bottleneck | Δ required-path p50/p95 | Δ runner-min/mo | Δ native units / money | Evidence / n | Risk / effort | Next proof |
+|---|---|---|---|---|---|---|---|---|
+| 1 | <top material choice or keep> | | | | | | | |
 
 Combined wall-clock saving: <recomputed path or unknown, not the sum of rows>.
 Recompute total runner minutes separately; don't double-count shared work.
+Show comparability, sample size and uncertainty per the [measurement guide](../references/04-measurement-benchmarking.md#evidence-tiers).
 
 ## Evidence identity and release eligibility
 
@@ -138,18 +172,19 @@ verification, rollback, and one next action.
 
 - Selected-versus-FULL shadow comparison on identical representative revisions: <results, test identities, seeded/adversarial failures, unknowns>.
 - Failure probes: <child failure, unexpected skip, cancellation/timeout, missing report/shard, wrong/stale SHA or policy/artifact mismatch all reject green/eligibility>.
-- Classification of the proposal: <equivalent-work acceleration / scheduling redistribution / both, measured separately>.
-- If redistributed: <work retained across PR + main + release; total runner-minutes; PR gain; full-green delay; changed detection window/risk>.
+- Workload state: <same / reduced / increased / changed / unknown; match identities, not counts, before claiming same-work speed>.
+- If redistributed: <work retained across PR + queue + post-push + release; total runner-minutes; PR gain; full-green delay; changed detection window/risk>.
+- Planned trials, cached results and local template checks do not establish hosted or model performance.
 
 ## Risks found (independent of speed)
 
 - <false-green pattern, privileged trigger, unpinned action, missing timeout…> — file:line — severity
 
-## PR plan (one intervention each)
+## Next reversible action
 
-| Order | PR | Module | Acceptance criteria | Owner review | Rollback |
-|---|---|---|---|---|---|
-| 1 | | | | | revert PR |
+<One read-only measurement, or one proposed experiment/change with a success
+criterion, negative proof, stop/rollback condition and owner. Record approval
+needed before any write, remote dispatch, paid trial or live settings change.>
 
 ## No-change findings
 

@@ -27,14 +27,31 @@ Inspect script bodies, configuration, selected files, flags, exit propagation an
 
 ## PR feedback budget
 
-Target latest-revision PR feedback p50 <120 seconds and p95 <180 seconds. Record the owner's chosen budget and measured baseline separately; never report the targets as observed results. Measure p50/p95 end to end, including queue, setup, all required PR work, retries and aggregate reporting:
+Target latest-revision PR feedback p50 <120 seconds and p95 <180 seconds. Record
+targets and measured baselines separately. Measure first execution end to end,
+including dispatch, waiting, setup, work and aggregate reporting:
 
 | Metric | Start | Finish and interpretation |
 |---|---|---|
-| Latest-revision PR feedback | Provider receipt of the exact pushed revision | Authoritative PR gate reports a trustworthy success or genuine failure for the current revision; report outcomes separately |
-| First-push PR journey | First pushed revision in the defined PR observation window | First current revision achieves the complete PR gate; includes repair/re-push delays and shows the user's total wait |
+| Latest-revision PR feedback | Provider receipt of the exact pushed revision | First trustworthy success or failure from the authoritative PR gate on first execution; report outcomes separately |
+| First-push PR journey | First pushed revision in the defined PR observation window | First trustworthy complete green for a current revision; includes repair/re-push delays |
 
-Latest-revision feedback measures time to a trustworthy result; time to green also includes repair/re-push delay. Cancelled, superseded, unfinished and budget-aborted runs retain explicit censored/breach status. Existing helper success-latency proxies do not implement this broader result metric. State which metric each observation covers and report both. Use actual push/event timestamps, not author/commit dates. If unavailable, mark the metric unknown or name the run-created proxy explicitly. Keep failed, cancelled, superseded and still-unvalidated observations visible with counts/ages; successful-only percentiles do not describe the whole loop. Record sample size, cohort, config era and cache state; small-sample p95 is preliminary.
+Execution retries are diagnostic only: keep the original failure. A later provider
+attempt counts as first execution only under the GitHub PR-only
+[approval exception](13-measured-adapters.md#pr-approval-history): require
+authenticated, identity-matched `completed` / `action_required` receipts and
+complete attempt-scoped zero-job inventories for every predecessor, without gaps
+or duplicates. Zero jobs alone is not hold evidence. Source pushes, queue admission
+and publication retain first-attempt requirements. Itemize approval and dependency
+wait separately from runner wait; do not reset the receipt clock after approval.
+
+If the exact push/event receipt is unavailable, mark the metric unknown or name
+the run-created proxy explicitly; helper success-latency proxies do not implement
+this broader result metric. Keep censored/unvalidated, cancelled, superseded and
+unfinished observations visible with counts and ages, including budget aborts and
+breaches. Report pre-main queue wait and full execution on the exact candidate
+separately from supplemental post-push observations. Record sample size, cohort,
+config era and cache state; small-sample p95 is preliminary.
 
 A timeout bounds a stuck process; it is not a feedback budget. Enforce measured per-run stage/job budgets with a nonpassing result at or above the limit. Diagnose breaches and change capacity or scheduling; do not silently revise the objective. It never authorizes skipping tests, downgrading checks, masking failure or declaring unfinished work green. High-risk changes may legitimately require a longer PR path.
 

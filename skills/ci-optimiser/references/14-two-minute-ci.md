@@ -17,28 +17,30 @@ optimizations with [live research](16-live-research.md) and target evidence.
 
 ## Acceptance and audit
 
-Require first-attempt PR feedback p50 <120 s and p95 <180 s. Require per-job waiting
-<10 s, setup <30 s, lint <5 s, typecheck <5 s, test work <60 s per shard and the
-local pre-push path <9 s. Require >95% exact PR dependency-cache hits where that
-cache is applicable. Define build, formatting, reporting and total-job budgets
+Require first-execution PR feedback p50 <120 s and p95 <180 s. Require per-job
+runner wait <10 s, setup <30 s, lint <5 s, typecheck <5 s, test work <60 s per shard
+and the local pre-push path <9 s. Require >95% exact PR dependency-cache hits where
+that cache is applicable. Define build, formatting, reporting and total-job budgets
 from the measured path before modifying them; do not leave unbounded work.
 
 Retrieve up to the last 150 runs by default (configurable), paginating jobs and attempts, including failures,
 cancellations and incomplete runs. Retention or fewer available runs limits the
 sample; never fabricate the remainder. Split event, workflow/config era, runner,
-cache state and first attempt versus rerun. Keep a failed original attempt even
-when a later attempt passed. No check rerun substitutes for a code fix.
+cache state and first execution versus diagnostic rerun. Keep a failed original
+attempt even when a later attempt passed. No check rerun substitutes for a code fix.
 
 Report one row per job: waiting/setup/running p50 and p95, n, outcome counts,
 timestamp source and gaps. Expose reporting/teardown/unattributed time. Missing
 setup timestamps cannot count as a 0-second setup. Resolve step names against
 actual commands; generic analyzer heuristics are observations, not budget proof.
-Report dependency wait separately from job creation-to-start runner wait.
+Report dependency and approval wait separately from runner wait. If created-to-start
+combines those waits, label it as a proxy rather than isolating runner time by assumption.
 
 Rank the largest measured bucket on the required DAG. Do not sum parallel jobs
 or their percentiles to estimate PR time. Record total runner seconds separately.
 Use one stated percentile method across comparisons (the analyzer uses nearest-rank). A small sample's p95 is descriptive; one fast run cannot establish a reliable tail.
-Measure current-revision feedback and the full PR journey including repair delay.
+Use the [PR feedback budget](08-validation-architecture.md#pr-feedback-budget)
+for first-execution outcomes, the PR-only approval exception and the full PR journey.
 
 ## Queue and cancellation
 
@@ -118,17 +120,19 @@ Do not add dependency caches to a dependency-free repository merely to fill a ch
 
 ## Parallel work and test reuse
 
-Run independent lint, types, build and tests concurrently. Keep genuine artifact or
-schema dependencies. Move migration validation and unrelated application tests out
-of the slowest job into independent required jobs; never beyond main admission.
-Check the aggregate on failure, skip, cancellation, missing matrix legs and missing
-reports. Avoid setup duplication that costs more than the parallelism saves.
+Consider concurrent steps or split jobs only when independent work has a demonstrated
+opportunity after accounting for setup, capacity, contention and artifact transport.
+Keep work together without a material benefit; a cost-only candidate is not a
+speed recommendation. Keep genuine artifact and schema dependencies and all
+required work before main admission. Probe the aggregate on failure, skip,
+cancellation, missing matrix legs and missing reports.
 
-Compare more cores with more shards within approved spend. Measure CPU, memory, I/O and
-database contention. Allocate workers against actual available cores and memory;
-leave capacity for services. Balance shards by measured file duration, preserve the
-complete inventory, then randomize order within each shard with a recorded seed.
-One database per shard still needs worker-level transaction/schema isolation.
+Where tests dominate, measure CPU, memory, I/O and database contention before
+comparing worker tuning, larger runners or shards within approved spend. Allocate
+workers against actual available cores and memory; leave capacity for services.
+If sharding, balance by measured file duration, preserve the complete inventory,
+then randomize order within each shard with a recorded seed. One database per
+shard still needs worker-level transaction/schema isolation.
 
 For Vitest reuse, prove executable cleanup after each file before `isolate: false`:
 restore mocks/timers/globals/env, DOM/storage, listeners/servers/pending work,
@@ -204,10 +208,13 @@ list after completing everything else. A normal Blacksmith runner migration does
 not inherently require a PAT or a new application secret. Quote current rates,
 remaining organization-wide allowance, billing granularity and monthly volume.
 
-Estimate compute from **all billable job time**, including full queue runs, main
-cache seeding and verification, then add storage/idle/optional services. Do not
-multiply the critical path by one price. Public GitHub standard hosted compute is
-free; Blacksmith public-repo status alone does not grant unlimited free service.
+Apply native SKU rounding/rates per billable item before summing. Include **all
+billable cohorts**: queue, main, verification, failures and reruns where billed.
+Separate runner time, native units and money; a quota multiplier is not a price.
+Add material storage, transfer and idle costs, and list self-hosted equipment
+and operator costs apart from vendor bills. Do not multiply the critical path
+by one price. Public GitHub standard hosted compute is free; Blacksmith public-repo
+status alone does not grant unlimited free service.
 Its listed base x64 price is $0.004/min with 3,000 2-vCPU-equivalent free minutes per
 organization/month (checked 2026-11-20); verify larger-machine rates and allowances
 in the account. Do not assume that allowance is unused or that an OSS application

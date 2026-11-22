@@ -6,6 +6,10 @@ options; load [JS/TS migration guidance](15-toolchain-migration.md) only when re
 
 Each module: when it applies, the experiment, the counterexamples that make it a loss, and the gate. Facts dated 2026-11-01 come from [official sources](06-official-sources.md); re-check versions before quoting them. Config snippets: [recipes](07-config-recipes.md).
 
+Screen all seven modules in the [audit report](../templates/audit-report.md#option-screen),
+but compare only material choices with the incumbent and smallest compatible tune.
+The screen is not an adoption gate; apply the selected module's evidence requirements below.
+
 First map the [four validation categories](08-validation-architecture.md). Reducing PR
 frequency or moving integrated verification is a policy/scheduling change; measure it
 separately from making an unchanged workload execute faster. A small, cheap full suite
@@ -49,6 +53,9 @@ from cold cache. The following GitHub options are examples, not defaults for oth
 
 ## 3. Bigger machines and Vitest reuse
 
+**Applies when** test execution dominates the required path and resource or
+duration evidence suggests worker tuning, sharding or safe reuse would help.
+
 **Shards and workers.** Matrix of runner CPU × `--shard=i/n` × `maxWorkers`. Vitest 5 shards by **file**, not test case; pair with `--reporter=blob` and `vitest --merge-reports`. Sizing rule: pick n so the slowest shard ≈ median shard; `shard_skew` > 1.5 in `metrics.json` means rebalance before adding machines.
 
 **Isolation.** Vitest defaults: `pool: 'forks'`, `isolate: true`. `isolate: false` reuses module state across files in a worker: faster, but leaks globals, mocks, singletons and module caches between files. `poolOptions` was removed in Vitest 4; `maxThreads`/`maxForks` are now `maxWorkers`.
@@ -73,9 +80,10 @@ from cold cache. The following GitHub options are examples, not defaults for oth
 
 ## 5. Parallel jobs
 
-**Experiment.** Draw the provider's job DAG; consider splitting independent lint,
-typecheck, unit and build into siblings. Preserve the required check identity and
-prove its fail-closed behavior under the native provider's semantics.
+**Experiment.** Draw the provider's job DAG. For speed, consider splitting
+independent work only where the required path can improve after setup, capacity
+and transport. Preserve the required check identity and prove its fail-closed
+behavior under the native provider's semantics.
 
 **Counterexamples.** Each job repeats a 2-minute install, so 4 parallel jobs cost 8 runner-minutes for a 1-minute gain; concurrency limit on the plan turns parallel jobs into queued jobs; hidden ordering (build artifacts consumed by tests). **Build once, fan out** (one upstream build job, consumers download its artifact) cuts runner-minutes but adds a serial stage: Δ wall-clock = new serial stage + artifact upload/download on the slowest consumer − work removed from the pole. If that is above zero, it is a bill-only change, never a speed recommendation; a warm cache in each consumer is the alternative. Steps inside one job can run concurrently only when they share no cache, artifact, output directory, `GITHUB_ENV` write or started server.
 
