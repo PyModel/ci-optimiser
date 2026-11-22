@@ -192,6 +192,15 @@ class SkillDocsTest(unittest.TestCase):
                 )
                 self.assertIn("01-discovery-matrix.md#merge-admission-evidence", text)
 
+    def test_agent_prompt_binds_github_checks_and_each_job_to_queue_candidate(self):
+        text = " ".join((ROOT / "templates/agent-prompt.md").read_text().split())
+        queue_step = text.split("3. Classify", 1)[1].split("4. Fill", 1)[0]
+        self.assertRegex(
+            queue_step,
+            r"GitHub Actions[^.]*`merge_group`[^.]*reported check SHA and each job's "
+            r"checkout and build SHA to match the exact queue candidate SHA",
+        )
+
     def test_parallel_artifact_gate_requires_exact_provenance_and_negative_controls(self):
         for path, heading in (
             ("02-optimization-playbook.md", "5. Parallel jobs"),
