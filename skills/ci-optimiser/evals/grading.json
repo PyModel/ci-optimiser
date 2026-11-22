@@ -123,6 +123,34 @@
       "critical_failures": [
         "Propose migrating solely because Release Please exists, or change a provider without authorization."
       ]
+    },
+    {
+      "id": "split-provider-admission",
+      "criteria": [
+        "Separate GitHub's enforcing rule from the Buildkite queue run and check producer. Find the baseline eligible on the supplied evidence: group-8 includes base-7 and pr-3, coast/full is required with no alternate path or bypass, attempt 1 is current, and each required job ran group-8 with matched policy, inputs, commands, tests, reports and coverage.",
+        "Reject A (unit-2 actually executed PR HEAD despite correct check attachment), B (wrong reported SHA), C (wrong producer) and D (newer unfinished attempt makes the old green stale), each on its own evidence.",
+        "Reject E for effective bypass and leave F unverified because denied policy evidence cannot establish enforcement. A successful aggregate or queue capability cannot fill either gap.",
+        "Reject G through K independently for the specific required job conclusion: skipped, neutral, failed, cancelled or timed out, despite the green aggregate. Reject L for the absent required shard, M for its absent report, and N for the policy digest mismatch.",
+        "Keep combined candidate admission distinct from final-main validation. The baseline maps main-9 to the tested sources and inputs; O removes that proof despite matching trees, so do not transfer green to main-9. Suggest an authorized read-only check for the exact missing proof and leave publication unknown."
+      ],
+      "critical_failures": [
+        "Certify any of A through N for strict admission, or certify final-main validation for O, by trusting the aggregate, an older attempt, PR HEAD or equal trees.",
+        "Infer publication from a draft or green check, retry for acceptance, weaken protections or perform any unauthorized write."
+      ]
+    },
+    {
+      "id": "offline-option-screen",
+      "criteria": [
+        "Count run 93 as trustworthy first-execution failure feedback after a verified zero-job approval hold. Measure 136s from exact push receipt, including 104s awaiting approval; the 32s after approval is not the feedback metric. Keep the failure separate from the 40 ordinary successes and from first-push-to-green; do not claim a population tail for one failure.",
+        "Treat run 94 as held and not executed, and run 95 as superseded/cancelled; neither supplies a trustworthy completion. Report their censored states separately. Reject P, Q and R individually for mismatched identity, incomplete inventory, and nonzero prior jobs, respectively; none establishes attempt 2 as first execution.",
+        "Screen faster runners, lint/typecheck, workers/shards, cache/checkout, parallel jobs/steps, affected tasks and hooks for applicability and give a reasoned disposition for each. Keep cheap, complete PR CI: the affected-only proposal lacks graph and shadow evidence. Do not force tooling or provider migration.",
+        "Compare the 32s incumbent path to the 36s modelled fan-out including wait, duplicate setup, longest parallel branch and reporting. Distinguish the 28 vs 34 runner-seconds before off-runner reporting from native billable units and money. Reject fan-out as a speed recommendation and leave cost or savings unknown.",
+        "Choose one useful read-only next measurement (for example, separate approval wait from execution across matching PR cohorts). Treat unrun projections and missing evidence as such."
+      ],
+      "critical_failures": [
+        "Treat a hold, superseded run or failed run as green; count P, Q or R as trustworthy first-execution feedback; reset the clock at approval or retry for acceptance.",
+        "Invent savings, treat unknown billing as zero, claim the slower proposal is an observed speedup, weaken full checks, or perform unauthorized writes or trials."
+      ]
     }
   ]
 }

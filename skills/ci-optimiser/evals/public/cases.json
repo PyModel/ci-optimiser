@@ -224,6 +224,126 @@
         "evidence": "Latest version, tag, changelog and release artifact agree; release and publish gates are verified.",
         "requested_improvement": "No known defect; interested in current best practices."
       }
+    },
+    {
+      "id": "split-provider-admission",
+      "prompt": "Audit merge admission for the baseline and each variant. What can you conclude about the final main revision and the release? Use only these records; this is a read-only review.",
+      "input": {
+        "kind": "synthetic",
+        "reading_notes": "Commit IDs and digests are synthetic labels. Each variant independently replaces just the field named by its dot path in baseline. Null means no record. Job test lists are inventories, not pass verdicts. The clock is in seconds since the queue event.",
+        "target": {"scm": "GitHub.com", "repo": "fixture/coast", "branch": "main"},
+        "candidate": {"pr_sha": "pr-4", "base_sha": "base-7", "predecessors": ["pr-3"], "combined_sha": "group-8", "tree": "tree-8"},
+        "reviewed": {
+          "policy_digest": "policy-3",
+          "build_inputs_digest": "inputs-6",
+          "jobs": {
+            "lint": {"command": "make lint", "report": "lint.json"},
+            "unit-1": {"command": "make unit-1", "tests": ["parse", "round-trip"], "report": "unit-1.xml"},
+            "unit-2": {"command": "make unit-2", "tests": ["sort", "range"], "report": "unit-2.xml"}
+          },
+          "coverage_profile": "core-lines-v2"
+        },
+        "baseline": {
+          "decision": {"as_of_s": 50, "latest_attempt": {"number": 1, "state": "completed"}},
+          "policy_evidence": {
+            "read_status": "authenticated",
+            "source": "GitHub effective ruleset and check-source receipt for fixture/coast main, bound to group-8 at +50s",
+            "merge_queue_required": true,
+            "required_on_every_merge_group": "coast/full",
+            "trusted_producer": "buildkite-app:17",
+            "effective_bypass_actors": [],
+            "other_admission_paths": []
+          },
+          "check": {"repo": "fixture/coast", "context": "coast/full", "producer": "buildkite-app:17", "reported_sha": "group-8", "run_id": 81, "attempt": 1, "conclusion": "success"},
+          "execution": {
+            "source": "Authenticated Buildkite queue webhook and job checkout receipts for the same repository, run 81 attempt 1",
+            "pipeline": "coast/full",
+            "event": "merge_group/checks_requested",
+            "ref": "refs/heads/gh-readonly-queue/main/g8",
+            "event_head_sha": "group-8",
+            "completed_at_s": 47,
+            "policy_digest": "policy-3",
+            "build_inputs_digest": "inputs-6",
+            "test_results_replayed": false,
+            "job_inventory_complete": true,
+            "jobs": {
+              "lint": {"sha": "group-8", "command": "make lint", "result": "success", "report": "lint.json"},
+              "unit-1": {"sha": "group-8", "command": "make unit-1", "tests": ["parse", "round-trip"], "result": "success", "report": "unit-1.xml"},
+              "unit-2": {"sha": "group-8", "command": "make unit-2", "tests": ["sort", "range"], "result": "success", "report": "unit-2.xml"}
+            },
+            "coverage_profile": "core-lines-v2"
+          },
+          "final_main": {
+            "sha": "main-9",
+            "tree": "tree-8",
+            "source_mapping_receipt": "Authenticated GitHub merge record binds main-9 to group-8, base-7, ordered predecessor pr-3, PR pr-4 and inputs-6 under policy-3."
+          }
+        },
+        "variants": [
+          {"id": "A", "path": "execution.jobs.unit-2.sha", "value": "pr-4"},
+          {"id": "B", "path": "check.reported_sha", "value": "base-7"},
+          {"id": "C", "path": "check.producer", "value": "other-app:23"},
+          {"id": "D", "path": "decision.latest_attempt", "value": {"number": 2, "state": "in_progress"}},
+          {"id": "E", "path": "policy_evidence.effective_bypass_actors", "value": ["maintainers"]},
+          {"id": "F", "path": "policy_evidence", "value": {"read_status": "denied"}},
+          {"id": "G", "path": "execution.jobs.unit-2.result", "value": "skipped"},
+          {"id": "H", "path": "execution.jobs.unit-2.result", "value": "neutral"},
+          {"id": "I", "path": "execution.jobs.unit-2.result", "value": "failure"},
+          {"id": "J", "path": "execution.jobs.unit-2.result", "value": "cancelled"},
+          {"id": "K", "path": "execution.jobs.unit-2.result", "value": "timed_out"},
+          {"id": "L", "path": "execution.jobs.unit-2", "value": null},
+          {"id": "M", "path": "execution.jobs.unit-2.report", "value": null},
+          {"id": "N", "path": "execution.policy_digest", "value": "policy-2"},
+          {"id": "O", "path": "final_main.source_mapping_receipt", "value": null}
+        ],
+        "release_observation": {"draft_exists": true, "published_state": null}
+      }
+    },
+    {
+      "id": "offline-option-screen",
+      "prompt": "Audit PR feedback and the proposed CI changes. Recommend what to keep or measure next. Use only the supplied records; no network calls, edits, or paid trials.",
+      "input": {
+        "kind": "synthetic",
+        "target": {"repo": "fixture/inlet", "scm_and_executor": "GitHub.com Actions", "event": "pull_request", "workflow": "full-python", "stack": "Python stdlib and unittest; no monorepo or configured type checker"},
+        "feedback": {
+          "clock": "Relative seconds since each revision's verified push receipt; snapshots at +160s.",
+          "current_failure": {
+            "run_id": 93,
+            "head_sha": "pr-5",
+            "prior": {"repo": "fixture/inlet", "run_id": 93, "head_sha": "pr-5", "event": "pull_request", "workflow": "full-python", "attempt": 1, "authenticated": true, "status": "completed", "conclusion": "action_required", "jobs": {"complete_for_attempt": true, "total": 0}},
+            "approval_requested_at_s": 0,
+            "approval_at_s": 104,
+            "execution": {"attempt": 2, "exact_repo_run_event_workflow_and_sha_verified": true, "authoritative_result": "failure", "reported_at_s": 136}
+          },
+          "other_revisions": [
+            {"run_id": 94, "head_sha": "pr-6", "attempt": 1, "authenticated_identity_match": true, "status": "completed", "conclusion": "action_required", "jobs": {"complete_for_attempt": true, "total": 0}, "approval_at_s": null, "execution_result": null},
+            {"run_id": 95, "head_sha": "pr-7", "attempt": 1, "superseded_by": "pr-8", "superseded_at_s": 15, "cancelled_at_s": 16, "authoritative_result": null}
+          ],
+          "alternatives": {
+            "reading_notes": "For each row, independently replace the field at the indicated path in current_failure.prior. The execution record and the other revisions are unchanged.",
+            "rows": [
+              {"id": "P", "path": "head_sha", "value": "pr-old"},
+              {"id": "Q", "path": "jobs.complete_for_attempt", "value": false},
+              {"id": "R", "path": "jobs.total", "value": 1}
+            ]
+          }
+        },
+        "incumbent": {
+          "scope": "One full PR job runs style checks then all unit tests on every revision.",
+          "ordinary_first_execution_successes_without_holds": {"n": 40, "p50_s": 34, "p95_s": 42},
+          "representative_path_s": {"runner_wait": 2, "setup": 6, "style": 2, "tests": 20, "final_reporting_off_runner": 2}
+        },
+        "proposals": {
+          "affected_only": {"maintained_dependency_graph": false, "shadow_comparison": null},
+          "fan_out": {
+            "timing_basis": "Unrun model for the representative path; same commands and inputs. Both jobs start after 2s of simultaneous runner wait.",
+            "runner_work_s": {"style_job": {"setup": 6, "style": 2}, "test_job": {"setup": 6, "tests": 20}},
+            "after_both_jobs_off_runner_fan_in_and_reporting_s": 8
+          }
+        },
+        "other_evidence": {"cache_timings": null, "runner_scaling": null, "hook_change_requested": false},
+        "billing": {"sku": null, "native_billed_units": null, "rate": null, "shared_allowance": null, "successful_merges": null}
+      }
     }
   ]
 }

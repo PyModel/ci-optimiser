@@ -58,9 +58,9 @@ class BehaviorResultsTests(unittest.TestCase):
     def test_complete_paired_ledger_counts_declared_grades_only(self):
         result = self.validate()
         self.assertTrue(result['complete_suite'])
-        self.assertEqual(result['planned_trials'], 24)
-        self.assertEqual(result['paired']['both_pass'], 12)
-        self.assertEqual(result['outcomes']['A'], {'pass': 12, 'fail': 0, 'blocked': 0})
+        self.assertEqual(result['planned_trials'], 28)
+        self.assertEqual(result['paired']['both_pass'], 14)
+        self.assertEqual(result['outcomes']['A'], {'pass': 14, 'fail': 0, 'blocked': 0})
 
     def test_failed_and_blocked_results_remain_in_denominator(self):
         failed = self.ledger['trials'][1]
@@ -69,8 +69,8 @@ class BehaviorResultsTests(unittest.TestCase):
         blocked.update(status='blocked', grade=None, critical_failure=None, grader_id=None,
                        reason='Runtime unavailable', duration_s=None, output=None, tool_calls=None, evidence=[])
         result = self.validate()
-        self.assertEqual(result['planned_trials'], 24)
-        self.assertEqual(result['outcomes']['B'], {'pass': 10, 'fail': 1, 'blocked': 1})
+        self.assertEqual(result['planned_trials'], 28)
+        self.assertEqual(result['outcomes']['B'], {'pass': 12, 'fail': 1, 'blocked': 1})
         self.assertEqual(result['paired']['regression'], 1)
         self.assertEqual(result['paired']['inconclusive'], 1)
         self.assertEqual(result['critical_failures'], 1)
@@ -81,7 +81,7 @@ class BehaviorResultsTests(unittest.TestCase):
         self.ledger['trials'] = self.ledger['trials'][:2]
         result = self.validate()
         self.assertFalse(result['complete_suite'])
-        self.assertEqual((result['selected_cases'], result['suite_cases']), (1, 12))
+        self.assertEqual((result['selected_cases'], result['suite_cases']), (1, 14))
 
     def test_missing_duplicate_or_invented_trials_are_rejected(self):
         original = copy.deepcopy(self.ledger)
@@ -178,7 +178,17 @@ class BehaviorResultsTests(unittest.TestCase):
                 self.validate()
 
     def test_public_case_and_hidden_rubric_inventories_are_separate(self):
-        self.assertEqual(len(checker.case_inventory(self.suite, self.rubric)), 12)
+        cases = checker.case_inventory(self.suite, self.rubric)
+        new_ids = {'split-provider-admission', 'offline-option-screen'}
+        self.assertEqual(set(cases), new_ids | {
+            'layered-go-cache', 'negative-plus-unknown', 'exact-fallback-unknown',
+            'hidden-save', 'acceptance-retry', 'planned-trials', 'cleanup-log',
+            'cleanup-log-with-note', 'release-squash-inputs', 'release-bot-approval',
+            'release-draft-mismatch', 'release-provider-fit',
+        })
+        for case_id in sorted(new_ids):
+            with self.subTest(case_id=case_id):
+                self.assertEqual(cases[case_id]['input']['kind'], 'synthetic')
         self.suite['cases'][0]['expected_grade'] = 'pass'
         with self.assertRaisesRegex(ValueError, 'unexpected or missing fields'):
             checker.case_inventory(self.suite, self.rubric)
@@ -220,7 +230,7 @@ class BehaviorResultsTests(unittest.TestCase):
                 result = subprocess.run(command, text=True, capture_output=True, check=False)
                 self.assertEqual(result.returncode, expected, result.stderr)
                 if expected != 2:
-                    self.assertEqual(json.loads(result.stdout)['planned_trials'], 24)
+                    self.assertEqual(json.loads(result.stdout)['planned_trials'], 28)
 
 
 if __name__ == '__main__':
