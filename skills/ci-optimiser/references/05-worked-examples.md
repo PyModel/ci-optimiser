@@ -20,7 +20,7 @@ Illustrative shapes, not measurements. Numbers here show the reasoning; never co
 
 **Observed:** uv, pytest on 3 Python versions × 2 OS. Install 50 s of 3 min per job, no concurrency group.
 
-**Plan:** `concurrency: {group: ci-${{ github.ref }}, cancel-in-progress: true}` for PR refs only; uv cache via `astral-sh/setup-uv` cache option; pre-push ruff hook. Everything else **NOT APPLICABLE**: no graph, runners not the bottleneck, already parallel. Saying so is the deliverable.
+**Plan:** use the [first-attempt PR cancellation recipe](07-config-recipes.md#parallel-jobs--one-aggregate-required-check); uv cache via `astral-sh/setup-uv` cache option; pre-push ruff hook. Everything else **NOT APPLICABLE**: no graph, runners not the bottleneck, already parallel. Saying so is the deliverable.
 
 ## C. Polyglot service (Go API + React UI + Terraform)
 

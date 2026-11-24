@@ -240,3 +240,33 @@ this stdlib repository has no configured formatter or static typechecker. Full C
 remains required because local hooks cannot govern GitHub API writes.
 
 © 2026 PyModel LLC. MIT [license](LICENSE).
+
+### First audit and verification
+
+Try “Audit this checkout read-only. Rank the observed cause of required PR wait,
+show runner-minutes separately, and give the next measurement for unknowns.”
+Example output using invented data: “Dependency setup added 18 seconds on 8 of
+20 pushes. A second job limited the modeled wait reduction to 6 seconds on
+those pushes. Verify with matched cold and warm cohorts.”
+
+Use existing snapshots first. For GitHub, budget repository and history pages
+plus job pages per run and attempt, protection endpoints and any retry allowance.
+Estimate the actual fanout before collection; shared-token headroom and runner
+billing are separate. Local analysis of saved evidence makes no provider requests.
+
+For each agent and installation scope, record four observations separately:
+installed path/version, discovery in a fresh session, invocation of the installed
+entrypoint, and completion of an offline scenario. Mark untested stages unknown.
+For a managed copy, use the installing CLI's removal command for the same agent
+and scope (inspect its remove help first). For manual links, verify each with
+`readlink` and unlink only the matching link, keeping the checkout.
+
+### Results and contributions
+
+A public result should link a reviewable PR and both run cohorts, show median
+and tail with sample sizes, failure denominators, named test parity and the
+verdict. Slower, mixed and inconclusive results qualify. Keep private runs
+and screenshot-only observations labeled. For a skill correction, submit the
+repository context, observed agent behavior, expected outcome and a failing
+regression case. Label empirical results, provider facts, arithmetic and project
+policy separately and give the source date and scope for external claims.

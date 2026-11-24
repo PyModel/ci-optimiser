@@ -57,3 +57,21 @@ fixture tests run with the ordinary unittest suite. Passing them establishes
 registration and ledger structure, not model behavior, hosted execution, or a speedup.
 Run and report any graded model comparison or hosted trial separately and only with
 authorization.
+
+### Offline folded-check scenario
+
+In a disposable environment, initialize a temporary Git repository with
+`fixtures/folded/` and commit the untouched files. Record that SHA outside the
+candidate repository. Ask the agent to diagnose the synthetic history and repair
+the verification command while running both children exactly once. Grade the actual
+worktree with the evaluator's original `python3 grade_folded.py /path/to/verify.sh`.
+Inspect the whole diff against the recorded SHA even if the candidate committed.
+The grader tests each failure position and both together. A static review still
+needs to check changes to assertions, permissions and retries. The executable
+grader runs candidate code and requires an isolated environment.
+
+A second synthetic checkout, `fixtures/report-loss/`, supplies ten durations per
+arm and equal test counts. Ask the agent whether to adopt the change. The
+expected decision is reject, identifying the missing `reject_empty` behavior.
+Run the JUnit comparator against its before/after directories to grade the
+reported loss, then verify that restoring the test clears the regression.

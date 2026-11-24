@@ -44,6 +44,8 @@ Reuse applicable authorization; request separate approval for remote dispatches,
 4. **Research.** During every audit, follow the [live research procedure](references/16-live-research.md) for the evidenced stack and bottlenecks. Confirm stable compatible versions, optimization options and applicable rates from public primary sources. Record URL, date and limitations; use only public identifiers in queries. If lookup is unavailable, finish the local audit and mark current claims unverified.
 5. **Recommend.** Rank the largest evidenced required-path bottleneck first. Prefer gains without extra cost; show latency, runner-minutes, cost, confidence, effort and risk separately. Include keeping the current config and no-change findings. Give each worthwhile proposal a validation step and rollback; report static leads as hypotheses, not measured wins.
 
+Use the [investigation protocols](references/18-investigation-protocols.md) for cancellation, cache misses, test parity, flakes and hook payback. Resolve helper paths from the installed skill directory and pass the target checkout explicitly.
+
 ## Budgets and defaults
 
 Use the [strict performance targets](references/14-two-minute-ci.md#acceptance-and-audit). Proven stage/job bounds fail at equality when enforced; track rolling targets separately. Rank the largest measured required-path bottleneck, then use the [optimization playbook](references/02-optimization-playbook.md) and [applicable defaults](references/14-two-minute-ci.md#runner-and-setup-changes). Keep the incumbent when it wins, including a cheap full PR suite. For a JS/TS bottleneck, load [toolchain migration](references/15-toolchain-migration.md) for pinned Bun/TS7 candidates and coverage parity.

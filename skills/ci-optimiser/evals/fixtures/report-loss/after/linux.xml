@@ -1,0 +1,1 @@
+<testsuite name="checkout" tests="2"><testcase name="round_trip"/><testcase name="accept_numeric"/></testsuite>

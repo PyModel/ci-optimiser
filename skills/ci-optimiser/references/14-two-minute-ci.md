@@ -74,8 +74,8 @@ on:
   push:
     branches: [main]
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-verify-v2-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) && format('pr-{0}', github.event.pull_request.number) || format('run-{0}-{1}', github.run_id, github.run_attempt) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
 ```
 
 For external CI, [verify the native queue event, exact candidate and expected check publisher](01-discovery-matrix.md#merge-admission-evidence).

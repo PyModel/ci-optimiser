@@ -22,6 +22,9 @@ Keep the old required check name on the aggregate job (`ci` here) so branch rule
 The report job assumes the reviewed `check_reports.py` helper has been made available
 at `scripts/check_reports.py`. Keep the project's existing coverage collection,
 payload transport, merge options and thresholds when adapting its commands.
+Reserve a unique top-level group prefix per workflow across the repository.
+Check caller/callee collisions, label-only events, old reruns and cancellation
+while a matrix leg is queued before enabling cancellation at the target.
 
 ```yaml
 name: ci
@@ -33,8 +36,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-verify-v2-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) && format('pr-{0}', github.event.pull_request.number) || format('run-{0}-{1}', github.run_id, github.run_attempt) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && contains(fromJSON('["opened","synchronize","reopened"]'), github.event.action) }}
 jobs:
   lint:
     runs-on: ubuntu-latest

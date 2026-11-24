@@ -75,3 +75,8 @@ Read [live research](../references/16-live-research.md), the
 [audit field guide](../references/12-field-guide.md) and [evidence formats](../references/11-evidence-formats.md).
 Helpers provide scoped evidence, not automatic source authentication, queue enforcement
 or deployment authorization. Keep exact revision/artifact provenance for releases.
+
+Before pushing, run the project hook and retain full test output and the original exit
+status. Leave check publication to the authorized CI publisher. Update a branch for
+an actual conflict, dependency or admission requirement. If repeated pushes hit the
+same failure, diagnose locally and follow the project's escalation policy.

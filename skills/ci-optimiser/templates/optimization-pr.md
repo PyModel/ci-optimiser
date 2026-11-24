@@ -94,3 +94,14 @@ Final before/after: PR p50/p95 <values and n>; total runner seconds/minutes <val
 native billable units <values / unknown>; monthly compute/storage
 <actual / estimate / unknown>. Include queue and trusted-main cache runs. Never
 price the critical-path wall time as if it were all runner work.
+
+## Post-merge measurement receipt
+
+| Field | Observed result |
+|---|---|
+| Baseline and candidate | Exact revisions, merge ancestry, config eras, comparable workflow/event/runner/cache |
+| Sampling | Predeclared creation windows and stop rule, commands, included run IDs, exclusion reasons, unfinished observations |
+| Feedback | Comparable n per arm, median, tail/range and uncertainty |
+| Compute and reliability | Runner-minutes per run, failures per finished run and diagnosed causes |
+| Work preserved | Expected job/leg reports, named test additions/losses, skips, retries and failures |
+| Verdict | Faster / slower / mixed / insufficient evidence / invalid. Give the next measurement or rollback. |

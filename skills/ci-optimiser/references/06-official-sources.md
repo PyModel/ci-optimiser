@@ -239,3 +239,10 @@ whether disabling it improves the required CI path. Preserve those unknowns.
 
 Not confirmed for an arbitrary target: release eligibility, token and approval
 settings, runner compatibility, registry support, or any publication timing or cost.
+
+## Investigation helper review (2026-11-23)
+
+Local fixture review covers JUnit identities, cache log redaction and shared-quota
+handling. The target runner's reporter dialect, pinned cache action's output
+semantics, and actual cancellation behavior still require target evidence. The
+existing dated provider entries remain the source for platform capabilities.

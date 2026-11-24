@@ -1,6 +1,6 @@
 {
   "schema": "ci-feature-matrix/1",
-  "reviewed_on": "2026-11-20",
+  "reviewed_on": "2026-11-23",
   "review_timezone": "America/New_York",
   "source_register": "references/06-official-sources.md",
   "purpose": "Dated local capability inventory and all 36 research recommendations. Per-feature dates preserve earlier source reviews; an inventory refresh does not reverify every external version.",
@@ -19,9 +19,10 @@
   },
   "local_verification": {
     "environment": {
-      "python": "3.12.14",
+      "python": "3.14.10",
       "platform": "linux"
     },
+    "tested_revision": "2026-11-23 adoption and audit-fix working tree based on db62042",
     "command": [
       "python3",
       "-m",
@@ -32,7 +33,7 @@
       "-v"
     ],
     "result": "passed",
-    "scope": "Repository Python behavior and packaging fixtures only; configured CI Python 3.10/3.x execution is not asserted.",
+    "scope": "Standalone bundled behavior and packaging fixtures in a local Linux container. Hosted CI and downstream provider behavior are outside this result.",
     "test_paths": [
       "tests/test_collection_contract.py",
       "tests/test_analysis_contract.py",
@@ -59,7 +60,8 @@
       "tests/test_shard_cache_contract.py",
       "tests/test_timings_audit.py",
       "tests/test_verify_gh_attestation.py",
-      "tests/test_benchmark_preparation.py"
+      "tests/test_benchmark_preparation.py",
+      "tests/test_investigation.py"
     ]
   },
   "features": [
@@ -1887,6 +1889,74 @@
       "source_urls": [
         "https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks"
       ]
+    },
+    {
+      "id": "compare_junit",
+      "domain": "repository",
+      "title": "Compare executed JUnit identities within a matrix leg",
+      "status": "implemented",
+      "reviewed_on": "2026-11-23",
+      "version_scope": {
+        "reviewed": [
+          "Compare executed JUnit identities within a matrix leg"
+        ],
+        "target": "Python 3.10+; offline fixture evidence"
+      },
+      "support_constraints": [
+        "Local supplied reports only; caller verifies completeness and provenance"
+      ],
+      "verification": {
+        "kind": "python_fixtures",
+        "runtime_execution": "local_passed",
+        "downstream_runtime_compatibility": "unverified"
+      },
+      "implementation_paths": [
+        "scripts/compare_junit.py"
+      ],
+      "documentation_paths": [
+        "references/18-investigation-protocols.md"
+      ],
+      "test_paths": [
+        "tests/test_investigation.py"
+      ],
+      "source_urls": [
+        "https://vitest.dev/guide/reporters",
+        "https://vitest.dev/guide/migration/",
+        "https://github.com/actions/upload-artifact"
+      ]
+    },
+    {
+      "id": "cache_log_labels",
+      "domain": "repository",
+      "title": "Redact scoped cache step observations",
+      "status": "implemented",
+      "reviewed_on": "2026-11-23",
+      "version_scope": {
+        "reviewed": [
+          "Redact scoped cache step observations"
+        ],
+        "target": "Python 3.10+; offline fixture evidence"
+      },
+      "support_constraints": [
+        "Local supplied reports only; caller verifies completeness and provenance"
+      ],
+      "verification": {
+        "kind": "python_fixtures",
+        "runtime_execution": "local_passed",
+        "downstream_runtime_compatibility": "unverified"
+      },
+      "implementation_paths": [
+        "scripts/cache_log_labels.py"
+      ],
+      "documentation_paths": [
+        "references/18-investigation-protocols.md"
+      ],
+      "test_paths": [
+        "tests/test_investigation.py"
+      ],
+      "source_urls": [
+        "https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching"
+      ]
     }
   ],
   "recommendation_coverage": [
@@ -3021,7 +3091,7 @@
   ],
   "helper_inventory": {
     "schema": "ci-helper-inventory/1",
-    "reviewed_on": "2026-11-20",
+    "reviewed_on": "2026-11-23",
     "documentation": "references/helper-registry.md",
     "helpers": [
       {
@@ -3238,6 +3308,22 @@
         "interface": "cli",
         "feature_ids": [
           "attestation_verifier"
+        ]
+      },
+      {
+        "path": "scripts/compare_junit.py",
+        "visibility": "public",
+        "interface": "cli",
+        "feature_ids": [
+          "compare_junit"
+        ]
+      },
+      {
+        "path": "scripts/cache_log_labels.py",
+        "visibility": "public",
+        "interface": "cli",
+        "feature_ids": [
+          "cache_log_labels"
         ]
       }
     ]

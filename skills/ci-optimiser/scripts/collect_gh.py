@@ -127,13 +127,18 @@ class GhClient:
 
     def __init__(self, *, timeout: float = DEFAULT_TIMEOUT, retries: int = 2, max_wait: float = 5,
                  api_version: str = API_VERSION, cache_dir: Path | None = None,
-                 runner=None, sleeper=None, clock=None):
+                 runner=None, sleeper=None, clock=None, reserve_requests: int = 0):
         if not math.isfinite(timeout) or timeout <= 0 or not 0 <= retries <= 5:
             raise ValueError("timeout must be positive and retries must be 0..5")
         if not math.isfinite(max_wait) or not 0 <= max_wait <= 30:
             raise ValueError("max_wait must be finite and 0..30 seconds")
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", api_version):
             raise ValueError("API version must use YYYY-MM-DD")
+        if reserve_requests < 0:
+            raise ValueError("request reserve must be nonnegative")
+        self.reserve_requests = reserve_requests
+        self.remaining = None
+        self.reset_at = None
         self.timeout, self.retries, self.max_wait = timeout, retries, max_wait
         self.api_version, self.cache_dir = api_version, cache_dir
         self.runner, self.sleeper, self.clock = runner or subprocess.run, sleeper or time.sleep, clock or time.time
@@ -183,6 +188,9 @@ class GhClient:
         command.append(path)
         waited = 0.0
         for attempt in range(self.retries + 1):
+            if self.reserve_requests and self.remaining is not None and self.remaining <= self.reserve_requests:
+                delay = max(0, self.reset_at - self.clock()) if self.reset_at else None
+                raise GhError(kind="shared_quota_reserve", retry_after=delay)
             self.stats["requests"] += 1
             headers: dict[str, str] = {}
             try:
@@ -198,6 +206,13 @@ class GhClient:
                 if len(proc.stdout.encode("utf-8")) > MAX_RESPONSE_BYTES:
                     raise GhError(kind="response_too_large")
                 status_code, headers, body = parse_http(proc.stdout)
+                remaining = headers.get("x-ratelimit-remaining", "")
+                reset = headers.get("x-ratelimit-reset", "")
+                if remaining.isascii() and remaining.isdigit():
+                    self.remaining = int(remaining)
+                    self.reset_at = int(reset) if reset.isascii() and reset.isdigit() else None
+                elif self.reserve_requests and proc.returncode == 0:
+                    raise GhError(kind="shared_quota_unknown")
                 if status_code is None and proc.returncode:
                     match = re.search(r"\bHTTP[ /]*(\d{3})\b", proc.stderr or "")
                     status_code = int(match.group(1)) if match else None
@@ -697,6 +712,29 @@ def collect(gh: Gh, repo: str, limit: int, out: Path, branch: str | None = None,
             shutil.rmtree(staging)
 
 
+def check_scratch(out: Path) -> None:
+    destination = out.absolute()
+    if ".." in destination.parts:
+        raise ValueError("scratch path must not traverse parent directories")
+    if destination.is_symlink():
+        raise ValueError("scratch destination is a symlink")
+    root = next((p for p in (destination, *destination.parents) if (p / ".git").exists()), None)
+    resolved = destination.resolve()
+    if root is None:
+        if any((p / ".git").exists() for p in (resolved, *resolved.parents)):
+            raise ValueError("scratch alias enters a checkout")
+        return
+    relative = destination.relative_to(root)
+    if not relative.parts or ".git" in relative.parts:
+        raise ValueError("use a dedicated scratch subdirectory")
+    if resolved != root.resolve() / relative or any(p.is_symlink() for p in destination.rglob("*")):
+        raise ValueError("scratch path contains a symlink")
+    tracked = subprocess.run(["git", "-C", str(root), "--literal-pathspecs", "ls-files", "-z", "--", str(relative)],
+                             capture_output=True, check=False)
+    if tracked.returncode or tracked.stdout:
+        raise ValueError("cannot use a tracked or unverifiable scratch destination")
+
+
 def main(argv: list[str] | None = None) -> int:
     global _default_client
     ap = argparse.ArgumentParser(description="Collect GitHub Actions evidence into immutable snapshots (GET only).")
@@ -715,6 +753,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="seconds per API request")
     ap.add_argument("--retries", type=int, default=2, help="maximum GET retries (0-5)")
     ap.add_argument("--max-rate-wait", type=float, default=5, help="total retry-wait budget per request, at most 30 seconds")
+    ap.add_argument("--reserve-requests", type=int, default=0, help="stop after a response reaches this remaining shared quota; 0 disables")
     ap.add_argument("--api-version", default=API_VERSION)
     args = ap.parse_args(argv)
     if not REPO_RX.fullmatch(args.repo):
@@ -722,8 +761,9 @@ def main(argv: list[str] | None = None) -> int:
     if not 1 <= args.limit <= MAX_LIMIT:
         ap.error(f"--limit must be 1..{MAX_LIMIT}")
     try:
+        check_scratch(args.out)
         _default_client = GhClient(timeout=args.timeout, retries=args.retries, max_wait=args.max_rate_wait,
-                                   api_version=args.api_version, cache_dir=args.out / ".http-cache" if args.incremental else None)
+                                   reserve_requests=args.reserve_requests, api_version=args.api_version, cache_dir=args.out / ".http-cache" if args.incremental else None)
     except ValueError as exc:
         ap.error(str(exc))
     try:
@@ -731,7 +771,9 @@ def main(argv: list[str] | None = None) -> int:
                        target_branch=args.target_branch, created=args.created, workflow=args.workflow,
                        include_incomplete=args.include_incomplete, timings_only=args.timings_only)
     except GhError as exc:
-        print(f"error: collection failed: {exc}; check gh authentication and repository access", file=sys.stderr)
+        print(f"error: collection failed: {exc}", file=sys.stderr)
+        if exc.retry_after is not None:
+            print(f"provider quota or retry window resets in {exc.retry_after:.0f} seconds", file=sys.stderr)
         return 1
     except OSError:
         print("error: snapshot could not be saved; previous current pointer was not intentionally replaced", file=sys.stderr)

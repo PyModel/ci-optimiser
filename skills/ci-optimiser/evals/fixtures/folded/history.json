@@ -1,0 +1,1 @@
+{"synthetic":true,"workflow":"verify","runs":[{"revision":"one","commands":[1,0],"reported":0},{"revision":"two","commands":[0,1],"reported":1},{"revision":"three","commands":[0,0],"reported":0}]}

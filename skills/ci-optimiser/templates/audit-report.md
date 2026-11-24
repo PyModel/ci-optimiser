@@ -201,3 +201,9 @@ needed before any write, remote dispatch, paid trial or live settings change.>
 ## Limits of this audit
 
 - <missing data, low samples, approximations>
+
+For ranked causes, give observed savings per affected push and runner-minutes
+separately from a modeled upper bound. Include affected pushes / total and days
+observed. If the ranking depends on an unmeasured ceiling, state which comparison
+would decide it. Label each outside claim as a provider fact, reported case,
+calculation or policy choice, with date and scope.

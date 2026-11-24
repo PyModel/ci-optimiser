@@ -64,3 +64,6 @@ paths must equal actual importing modules. Keep public documentation linked to t
 helper file and tests referencing its import or command path. Run the full package
 unittest suite and actionlint before committing; do not replace behavior tests with
 this inventory check.
+
+The [investigation protocols](18-investigation-protocols.md) document
+[JUnit comparison](../scripts/compare_junit.py) and [cache log labels](../scripts/cache_log_labels.py).

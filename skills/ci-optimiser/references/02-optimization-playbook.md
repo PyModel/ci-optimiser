@@ -68,7 +68,7 @@ duration evidence suggests worker tuning, sharding or safe reuse would help.
 
 ## 4. Caching and blobless clone
 
-**Cache scope (GitHub).** A run can restore caches from its own branch or the default branch, never from sibling or child branches; a PR cache is scoped to the PR merge ref and only re-runs of that PR can restore it. So: warm the default-branch cache from `push` to main, and let PRs read it.
+**Cache scope (GitHub).** A run can restore caches from its own branch, the default branch or (for pull requests) the PR base branch, never from sibling or child branches; a PR cache is scoped to the PR merge ref and only re-runs of that PR can restore it. So: warm the default-branch cache from `push` to main, and let PRs read it.
 
 **Keys.** Include lockfile hash, OS, arch, toolchain version, and any build-affecting env. `restore-keys` fallbacks are fine for package stores (content-addressed) and dangerous for build outputs (stale artifacts). Consider exact-key `node_modules` alongside package stores where JS setup warrants it. `actions/setup-node` / `setup-python` built-in caches cover package stores: setup-node caches npm automatically only when `packageManager` names npm; yarn/pnpm need `cache:`; setup-python caching is opt-in (`pip`, `pipenv`, `poetry`).
 
