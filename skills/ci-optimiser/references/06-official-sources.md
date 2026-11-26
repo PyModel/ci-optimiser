@@ -240,6 +240,36 @@ whether disabling it improves the required CI path. Preserve those unknowns.
 Not confirmed for an arbitrary target: release eligibility, token and approval
 settings, runner compatibility, registry support, or any publication timing or cost.
 
+## Self-hosted fleet sources (2026-11-26)
+
+Reviewed against the public pages on 2026-11-26. These support the
+[fixed-fleet contract](19-self-hosted-fleet.md). They are not target measurements,
+slot counts, or permission to keep persistent runners.
+
+| Topic | Fact relied on | URL |
+|---|---|---|
+| Runner assignment | An online idle runner matching all `runs-on` labels and groups receives the job. No pickup within 60 seconds re-queues it. A job queued more than 24 hours fails. Cache transfer domains include `*.blob.core.windows.net`. | https://docs.github.com/en/actions/reference/runners/self-hosted-runners |
+| Autoscaling shape | Ephemeral runners are the documented autoscaling recommendation. Persistent autoscaling is not recommended. ARC is the Kubernetes recommendation for organizations that already run Kubernetes. | https://docs.github.com/en/actions/reference/runners/self-hosted-runners |
+| Job hooks | `ACTIONS_RUNNER_HOOK_JOB_STARTED` runs synchronously before the job, blocks start, has no timeout, and a nonzero exit fails the job. `continue-on-error` does not apply. The script stays outside the `actions-runner` directory. Do not print secrets. | https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/run-scripts |
+| Cache limits | Default repository cache limit is 10 GB. Entries not accessed for 7 days are removed. Usage above 10 GB can be billed. | https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching |
+| Gradle daemon reuse | A daemon is reused only when Java home, Java version and JVM args match. | https://docs.gradle.org/current/userguide/gradle_daemon.html |
+| setup-gradle home | Existing Gradle user home is preserved unless `cache-overwrite-existing` is true. Cache cleanup before a GitHub cache save defaults to on-success. | https://github.com/gradle/actions/blob/main/docs/setup-gradle.md |
+| Android heap | Raise the heap when GC exceeds 15% of build time; documented examples are 4, 6 or 8 GB, with an explicit MaxMetaspaceSize when the default memory limit changes. | https://developer.android.com/build/optimize-your-build |
+| pnpm in CI | Corepack's shim starts Node on every invocation. Caching the store is not guaranteed to be faster. Only trusted jobs should write the store or metadata cache. `pnpm cache path` exists since v11.22.0. | https://pnpm.io/continuous-integration |
+| Playwright CI | `workers: 1` is the CI stability recommendation; a powerful self-hosted system may use more workers. Sharding is the wider parallel path. Cloud-caching browser binaries is not recommended because restore time is comparable to download time. | https://playwright.dev/docs/ci |
+| Docker Hub mirror | A registry mirror is a Hub pull-through cache. It does not mirror another private registry. `registry-mirrors` points the daemon at it. Mirror credentials expose that user's private Hub resources. | https://docs.docker.com/docker-hub/image-library/mirror/ |
+
+## Not confirmed for self-hosted fleets (2026-11-26)
+
+Label case-insensitivity; custom labels dropped on runner replacement; a runner
+weight or priority field beyond the reviewed routing section; Develocity Build
+Cache Node deprecation or a 2027.1 end-of-support date; OrbStack `memory_mib`
+defaults; zram preventing OOM on a target host; `actions/checkout` clean flags on
+an unpinned major; peak RSS budgets; shared Gradle-home lock contention; Kotlin
+daemon JVM defaults; Athens, Verdaccio or Maven proxy speedups; any measured
+saving from this fleet contract. Confirm each on the target before treating it
+as a fact.
+
 ## Investigation helper review (2026-11-23)
 
 Local fixture review covers JUnit identities, cache log redaction and shared-quota

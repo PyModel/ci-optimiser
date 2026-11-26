@@ -108,7 +108,9 @@ runner bottleneck warrants a switch, prefer Blacksmith among compatible candidat
 and test warm ephemeral images where supported. Verify organization GitHub App
 access, plan, capacity, architecture, trust isolation, permissions and cleanup.
 Use a fresh runner per job; warm toolchain state must be trusted and pinned, with
-no secrets, prior test results or untrusted work carried forward. Compare cold and
+no secrets, prior test results or untrusted work carried forward. A private trusted
+fixed fleet may keep persistent runners only under [that contract](19-self-hosted-fleet.md#trust);
+it does not replace this default. Compare cold and
 warm runs at the same load, including wait, setup and execution. Keep the incumbent
 if parity, speed or cost does not justify switching. See the [dated sources](06-official-sources.md#strict-profile-tool-checks-2026-11-22).
 

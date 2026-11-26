@@ -136,7 +136,24 @@ If heavy jobs skip drafts, include `ready_for_review` alongside `opened`, `synch
 and `reopened`, and test draft→ready without a new commit. Decide draft-state handling
 and intended skips explicitly. See [draft lifecycle sources](06-official-sources.md).
 
+## Job-level path selection
+
+Do not put `paths` or `paths-ignore` on a workflow that publishes a required check.
+A skipped workflow never reports that check. Trigger the workflow on every eligible
+candidate, including `merge_group`. A successful changes job may output one boolean
+per domain. Heavy jobs may use `if: needs.changes.outputs.<domain> == 'true'` for
+PR feedback only. On `merge_group`, run the full suite regardless of the diff.
+Unknown or high-risk paths select FULL. The aggregate from the previous recipe
+must `needs` the selector and every domain job, accept `skipped` only for a job
+the validated decision marked not required, and fail on failure, cancellation or
+an unexpected skip. A constant `true` output is not a selector. Fixed-fleet order:
+[self-hosted fleets](19-self-hosted-fleet.md#order).
+
 ## Pnpm store / uv / Go caches
+
+On a persistent self-hosted runner, do not add Corepack to pay a Node shim on every
+pnpm invocation, and do not assume a cloud store cache is faster than a warm local
+store. Trusted jobs alone may write that store. See [fixed fleets](19-self-hosted-fleet.md#caches).
 
 ```yaml
 - uses: pnpm/action-setup@v6          # before setup-node; reads packageManager

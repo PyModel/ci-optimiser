@@ -249,6 +249,33 @@ class SkillDocsTest(unittest.TestCase):
                 self.assertIn(f"]({prefix}{guide}#acceptance-and-audit)", text)
                 self.assertNotRegex(text, r"<180 (?:s|seconds)\b")
 
+    def test_self_hosted_fleet_stays_behind_the_existing_contracts(self):
+        skill = (ROOT / "SKILL.md").read_text()
+        self.assertIn("references/19-self-hosted-fleet.md", skill)
+        self.assertIn("untrusted jobs cannot write shared caches", skill)
+        fleet = (ROOT / "references/19-self-hosted-fleet.md").read_text()
+        for target in (
+            "03-security-correctness.md#required-checks-and-skips",
+            "02-optimization-playbook.md#4-caching-and-blobless-clone",
+            "06-official-sources.md#self-hosted-fleet-sources-2026-11-26",
+            "06-official-sources.md#not-confirmed-for-self-hosted-fleets-2026-11-26",
+        ):
+            self.assertIn(target, fleet)
+        self.assertNotIn("2027.1", fleet)
+        sources = (ROOT / "references/06-official-sources.md").read_text()
+        section = sources.split("## Self-hosted fleet sources (2026-11-26)\n", 1)[1].split("\n## ", 1)[0]
+        for url in (
+            "https://docs.github.com/en/actions/reference/runners/self-hosted-runners",
+            "https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/run-scripts",
+            "https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching",
+            "https://pnpm.io/continuous-integration",
+            "https://playwright.dev/docs/ci",
+            "https://docs.gradle.org/current/userguide/gradle_daemon.html",
+            "https://developer.android.com/build/optimize-your-build",
+            "https://docs.docker.com/docker-hub/image-library/mirror/",
+        ):
+            self.assertIn(url, section)
+
     def test_checker_can_fail(self):
         import tempfile
         with tempfile.TemporaryDirectory() as d:

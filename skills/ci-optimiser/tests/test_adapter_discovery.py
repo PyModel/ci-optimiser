@@ -46,6 +46,26 @@ class AdapterDiscoveryTests(unittest.TestCase):
         self.assertEqual(adapter["adapter"], "remote-task-cache")
         self.assertEqual(adapter["status"], "candidate_requires_review")
 
+    def test_self_hosted_label_routes_fleet_without_certifying_a_gain(self):
+        hosted = self.discover({".github/workflows/ci.yml": "jobs:\n  t:\n    runs-on: ubuntu-latest\n"})
+        self.assertNotIn("self-hosted-fleet", {x["adapter"] for x in hosted["adapter_candidates"]})
+        report = self.discover({".github/workflows/ci.yml": """
+jobs:
+  heavy:
+    runs-on: [self-hosted, linux]
+  ios:
+    runs-on:
+      - self-hosted
+"""})
+        fleet = next(x for x in report["adapter_candidates"] if x["adapter"] == "self-hosted-fleet")
+        self.assertEqual(fleet["status"], "candidate_requires_review")
+        self.assertEqual(fleet["version_support"], "unknown")
+        self.assertEqual(fleet["measured_benefit"], "unknown")
+        self.assertEqual(fleet["reference"], "references/19-self-hosted-fleet.md#when-this-applies")
+        self.assertEqual(fleet["evidence"][0]["basis"], "self-hosted runs-on label")
+        commented = self.discover({".github/workflows/ci.yml": "jobs:\n  t:\n    runs-on: ubuntu-latest # self-hosted note\n"})
+        self.assertNotIn("self-hosted-fleet", {x["adapter"] for x in commented["adapter_candidates"]})
+
 
 if __name__ == "__main__":
     unittest.main()

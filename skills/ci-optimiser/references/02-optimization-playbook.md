@@ -33,7 +33,7 @@ from cold cache. The following GitHub options are examples, not defaults for oth
 - GitHub larger runners: Team or Enterprise Cloud plans only; billed per minute, including on public repos.
 - Blacksmith: labels like `blacksmith-4vcpu-ubuntu-2404`; each job runs in a Firecracker microVM on Blacksmith's bare metal, destroyed after the job. Base x64 pricing and the shared free allowance were verified 2026-11-20; see the [cost contract](14-two-minute-ci.md#small-prs-and-cost). Confirm actual size, billing granularity and unused allowance before approving spend.
 - Depot: `depot-ubuntu-24.04`; ephemeral single-tenant EC2 instances, never reused; per-second billing.
-- Self-hosted: only ephemeral (one job per VM/container). Persistent runners on public repos let fork PRs execute on your hardware.
+- Self-hosted public or untrusted work: ephemeral only (one job per VM/container). Persistent runners on public repos let fork PRs execute on your hardware. A private trusted fixed fleet may keep persistent runners under the [fleet contract](19-self-hosted-fleet.md); that is not the default, and persistent runners are not the documented autoscaling shape.
 
 **Counterexamples.** Job is network/registry-bound (more CPU does nothing); tests serialize on one DB; runner cold cache erases the CPU win; vendor concurrency cap creates new queueing.
 

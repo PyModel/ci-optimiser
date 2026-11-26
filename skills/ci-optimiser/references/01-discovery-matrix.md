@@ -99,7 +99,8 @@ be verified, report unverified and keep existing protections.
 |---|---|---|
 | `pull_request_target`, `workflow_run` | privileged context; secrets reachable | read [security](03-security-correctness.md#privileged-triggers) before touching |
 | `continue_on_error`, `or_true` | may hide failures behind green | prove each is intentional, or flag as a false-green risk |
-| `paths_filter` on a required workflow | skipped workflow leaves required check Pending | see [skipped checks](03-security-correctness.md#required-checks-and-skips) |
+| `paths_filter` on a required workflow | skipped workflow leaves required check Pending | see [skipped checks](03-security-correctness.md#required-checks-and-skips); gate jobs, not the workflow |
+| `self_hosted_label` | job can run on your hardware; local disk and labels are not GitHub-hosted isolation | load [fixed fleets](19-self-hosted-fleet.md#when-this-applies); public/fork work stays ephemeral |
 | `unpinned_action` | supply-chain and reproducibility | pin to SHA per repo policy |
 | `fetch_depth`, `blob_filter` | history depth for affected/merge-base | module 4/6 interaction |
 | no `concurrency` | superseded pushes keep burning runners | `cancel-in-progress` for PR branches, never for default/release |
@@ -121,3 +122,5 @@ be verified, report unverified and keep existing protections.
 ## Monorepo graph sources
 
 Prefer, in order: the build tool's graph (`nx graph --file`, `turbo run --dry=json`, `bazel query`, `pants dependents`, Gradle `projects`) → package manager workspaces (`pnpm -r ls --json`) → a hand-written map for `select_affected.py`. A hand map rots: put a test in CI that fails when a new top-level package directory appears without a rule.
+
+A `self-hosted-fleet` adapter is a routing lead from a `self-hosted` runs-on label. It does not prove the fleet is private, persistent, or faster than ephemeral. Open [fixed fleets](19-self-hosted-fleet.md) only after that lead, then inspect labels, trust and telemetry.

@@ -17,6 +17,9 @@ Use the session date. Do not research unrelated languages, packages or vendors.
 - Rank the largest measured delay or runner-minute waste. Without telemetry,
   use config to identify a short list of leads and state the smallest next
   read-only measurement. Start with the cheapest reversible changes.
+- When jobs use self-hosted runners, open the [fleet sources](06-official-sources.md#self-hosted-fleet-sources-2026-11-26)
+  before recommending slot counts, local caches, hooks or an autoscaler. Do not
+  send private runner labels or host names to research tools.
 
 ## Check primary sources
 
