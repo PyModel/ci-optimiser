@@ -86,7 +86,7 @@ Record each as an experiment entry; revert the probes.
 
 ## Cache poisoning
 
-A cache key an untrusted run can write and a trusted run can restore is an injection path. GitHub scopes PR caches to the PR merge ref, which protects the default branch; self-hosted or third-party cache backends may not. Do not consume opportunistic cached build outputs as release inputs. A clean, trusted build may restore a policy-approved dependency store with exact correctness inputs and trusted writers. Alternatively, promote the exact immutable artifact from an eligible trusted build after independently verifying source, workflow, policy and artifact digest/provenance. A cache hit, branch name, or checksum alone is not authenticated promotion. If either contract cannot be proven, fail closed.
+A cache key an untrusted run can write and a trusted run can restore is an injection path. GitHub scopes PR caches to the PR merge ref, which protects the default branch; self-hosted or third-party cache backends may not. A persistent runner disk, a shared Gradle home, and an anonymous LAN build cache are outside that scope. Untrusted events on those machines are restore-only or use isolated homes. Do not consume opportunistic cached build outputs as release inputs. Fixed-fleet rules: [self-hosted fleets](19-self-hosted-fleet.md#trust). A clean, trusted build may restore a policy-approved dependency store with exact correctness inputs and trusted writers. Alternatively, promote the exact immutable artifact from an eligible trusted build after independently verifying source, workflow, policy and artifact digest/provenance. A cache hit, branch name, or checksum alone is not authenticated promotion. If either contract cannot be proven, fail closed.
 
 ## Supply chain
 

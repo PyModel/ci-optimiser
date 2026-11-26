@@ -150,7 +150,8 @@ payload, not freshly rerun work. See [evidence formats](11-evidence-formats.md).
 ## Runner selection
 
 Treat provider, hardware, architecture, OS/container, trust, toolchain and cache as
-separate dimensions. For `ubuntu-slim`, verify the current one-CPU container model,
+separate dimensions. A self-hosted label routes to [fixed fleets](19-self-hosted-fleet.md);
+it does not by itself justify persistent runners or an autoscaler. For `ubuntu-slim`, verify the current one-CPU container model,
 15-minute job bound and missing capabilities before considering short lightweight
 jobs. Standard VM assumptions are not portable. ARM options require dependency and
 image compatibility, not just a new label. Sources:

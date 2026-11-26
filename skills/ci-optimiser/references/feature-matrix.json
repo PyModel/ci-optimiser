@@ -1,6 +1,6 @@
 {
   "schema": "ci-feature-matrix/1",
-  "reviewed_on": "2026-11-23",
+  "reviewed_on": "2026-11-26",
   "review_timezone": "America/New_York",
   "source_register": "references/06-official-sources.md",
   "purpose": "Dated local capability inventory and all 36 research recommendations. Per-feature dates preserve earlier source reviews; an inventory refresh does not reverify every external version.",
@@ -776,6 +776,44 @@
         "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
         "https://docs.github.com/en/actions/concepts/runners/self-hosted-runners",
         "https://docs.github.com/en/billing/reference/actions-runner-pricing"
+      ]
+    },
+    {
+      "id": "self_hosted_fleet",
+      "domain": "platform",
+      "title": "Self-hosted fixed-fleet routing, hooks and cache boundary",
+      "status": "conditional",
+      "reviewed_on": "2026-11-26",
+      "version_scope": {
+        "reviewed": [
+          "GitHub self-hosted runner, job-hook and cache-limit pages reviewed November 26, 2026"
+        ],
+        "target": "Unverified; inspect the installed runner version, trust boundary and host telemetry before adoption"
+      },
+      "support_constraints": [
+        "Public and untrusted work stays on ephemeral runners",
+        "Persistent runners are a private trusted-fleet exception, not the fresh-runner default",
+        "Discovery routes a self-hosted label only; it does not measure queue time, RSS or cache benefit",
+        "No autoscaler, slot count or target benchmark has been performed"
+      ],
+      "verification": {
+        "kind": "source_review",
+        "runtime_execution": "not_executed",
+        "downstream_runtime_compatibility": "unverified"
+      },
+      "implementation_paths": [
+        "scripts/discover_repo.py"
+      ],
+      "documentation_paths": [
+        "references/19-self-hosted-fleet.md"
+      ],
+      "test_paths": [
+        "tests/test_adapter_discovery.py"
+      ],
+      "source_urls": [
+        "https://docs.github.com/en/actions/reference/runners/self-hosted-runners",
+        "https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/run-scripts",
+        "https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching"
       ]
     },
     {
@@ -2642,9 +2680,10 @@
       "title": "Evaluate lightweight and architecture-aware runners",
       "status": "conditional",
       "feature_ids": [
-        "github_runner_compatibility"
+        "github_runner_compatibility",
+        "self_hosted_fleet"
       ],
-      "implementation_scope": "Runner compatibility requirements and controlled experiments are documented; no runner migration or target performance claim is made.",
+      "implementation_scope": "Runner compatibility and fixed-fleet routing are documented; no runner migration, slot count or target performance claim is made.",
       "remaining_target_validation": [],
       "implementation_paths": [
         "scripts/discover_repo.py",
@@ -2652,16 +2691,21 @@
       ],
       "documentation_paths": [
         "references/09-platform-updates.md",
-        "references/10-stack-adapters.md"
+        "references/10-stack-adapters.md",
+        "references/19-self-hosted-fleet.md"
       ],
       "test_paths": [
         "tests/test_discovery_contract.py",
-        "tests/test_benchmark_contract.py"
+        "tests/test_benchmark_contract.py",
+        "tests/test_adapter_discovery.py"
       ],
       "source_urls": [
         "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
         "https://docs.github.com/en/actions/concepts/runners/self-hosted-runners",
-        "https://docs.github.com/en/billing/reference/actions-runner-pricing"
+        "https://docs.github.com/en/billing/reference/actions-runner-pricing",
+        "https://docs.github.com/en/actions/reference/runners/self-hosted-runners",
+        "https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/run-scripts",
+        "https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching"
       ]
     },
     {
@@ -3091,7 +3135,7 @@
   ],
   "helper_inventory": {
     "schema": "ci-helper-inventory/1",
-    "reviewed_on": "2026-11-23",
+    "reviewed_on": "2026-11-26",
     "documentation": "references/helper-registry.md",
     "helpers": [
       {

@@ -14,7 +14,9 @@ each script's `--help` before using it.
    nonsymlinked repo root: `python3 scripts/discover_repo.py --root REPO > AUDIT/discovery.json`.
    Keep raw evidence private: parsed fields may contain sensitive literals.
 2. Verify the detected providers, actual commands, tools/pins and dependency graph
-   with the [discovery matrix](01-discovery-matrix.md). Map triggers, includes,
+   with the [discovery matrix](01-discovery-matrix.md). If adapters include
+   `self-hosted-fleet`, load [fixed fleets](19-self-hosted-fleet.md) before ranking
+   runner or cache changes. Map triggers, includes,
    checks required at each boundary and the full-suite gate. Distinguish fork
    PR, trusted branch, queue and release permissions.
 3. Prefer the requested connector or an existing authorized provider connection.

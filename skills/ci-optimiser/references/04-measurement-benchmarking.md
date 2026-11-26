@@ -120,6 +120,13 @@ manifest/attempt schema in [evidence formats](11-evidence-formats.md), preservin
 the provider's identity distinctions. `updated_at` alone is not proof of green or
 check completion; missing attempt and policy evidence remains unknown.
 
+## Self-hosted host telemetry
+
+When jobs use self-hosted runners, group queue proxy and execution by `runner_name`
+and labels. `started_at − created_at` remains a proxy. Record peak RSS, OOM kills
+and free disk on the host; a missing probe is unknown, not zero. Do not turn a
+hypothesis RAM budget into a slot count. Procedure: [fixed fleets](19-self-hosted-fleet.md#measure).
+
 ## Strict contract boundaries
 
 The [legacy evaluator](11-evidence-formats.md#four-category-policy) does not certify

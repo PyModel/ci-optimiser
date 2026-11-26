@@ -134,7 +134,7 @@ the [conditional defaults](../references/14-two-minute-ci.md#runner-and-setup-ch
 
 | Family | Applicability | Disposition | Reason / next proof |
 |---|---|---|---|
-| Faster runner | | | <runner wait or execution bottleneck; capacity, scaling and cost evidence> |
+| Faster runner | | | <runner wait or execution bottleneck; hosted class or fixed self-hosted fleet, capacity, scaling and cost. Load the fleet reference when discovery reports self-hosted-fleet> |
 | Lint/typecheck | | | <addressable check time; framework and diagnostic/output parity> |
 | Workers/shards | | | <slowest shard, resource limits, isolation and complete reports> |
 | Cache/checkout | | | <setup/transfer cost, cold path, trust and needed history> |

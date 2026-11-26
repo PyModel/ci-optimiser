@@ -132,6 +132,9 @@ WORKFLOW_PATTERNS = {
     "continue_on_error": re.compile(r"continue-on-error:\s*true"),
     "or_true": re.compile(r"\|\|\s*(true|:)\s*$"),
     "runs_on": re.compile(r"^\s*runs-on:\s*(.+)$"),
+    "self_hosted_label": re.compile(
+        r"(?:^\s*runs-on:.*\bself-hosted\b|^\s*-\s*['\"]?self-hosted['\"]?\s*$)",
+        re.I),
     "needs": re.compile(r"^\s*needs:\s*(.+)$"),
     "paths_filter": re.compile(r"^\s*(paths|paths-ignore):"),
     "if_condition": re.compile(r"^\s*if:\s*(.+)$"),
@@ -410,7 +413,8 @@ def root_ci_config(path: str, provider: str) -> bool:
     return any(path.count("/") == pattern.count("/") for pattern in CI_CONFIGS[provider])
 
 
-def adapter_candidates(files: list[str], packages: dict, found: dict) -> list[dict]:
+def adapter_candidates(files: list[str], packages: dict, found: dict,
+                       workflows: dict | None = None) -> list[dict]:
     """Route positive evidence to an adapter without reading or running more code."""
     definitions = (
         ("go", (), ("go.mod", "go.work", "*_test.go"), "go"),
@@ -443,6 +447,15 @@ def adapter_candidates(files: list[str], packages: dict, found: dict) -> list[di
                            "evidence": [{"path": path, "basis": "CI filename"} for path in found["ci"][:MAX_LANGUAGE_EXAMPLES]],
                            "version_support": "unknown", "measured_benefit": "unknown",
                            "reference": "references/10-stack-adapters.md#artifact-transport"})
+    fleet = [path for path, meta in sorted((workflows or {}).items())
+             if isinstance(meta, dict) and "self_hosted_label" in meta]
+    if fleet:
+        candidates.append({"adapter": "self-hosted-fleet", "status": "candidate_requires_review",
+                           "evidence": [{"path": path, "basis": "self-hosted runs-on label"}
+                                        for path in fleet[:MAX_LANGUAGE_EXAMPLES]],
+                           "evidence_truncated": len(fleet) > MAX_LANGUAGE_EXAMPLES,
+                           "version_support": "unknown", "measured_benefit": "unknown",
+                           "reference": "references/19-self-hosted-fleet.md#when-this-applies"})
     return candidates
 
 
@@ -548,7 +561,7 @@ def discover(root: Path) -> dict:
         "found": found,
         "package_json": packages,
         "github_workflows": workflows,
-        "adapter_candidates": adapter_candidates(files, packages, found),
+        "adapter_candidates": adapter_candidates(files, packages, found, workflows),
         "validation_topology": validation_topology(found, packages, workflows, providers, truncated, issues),
         "hints": {
             "js_modules_applicable": js,

@@ -37,7 +37,9 @@ module download, compilation and cached test results before calling tests slow.
 **Experiment:** compare unchanged workloads with `go test ./...`; use
 `go test -count=1 ./...` when measuring actual test execution rather than cached
 results. Measure `-p`, test `-parallel` and `GOMAXPROCS` independently against CPU,
-memory and shared services; none is a universal fastest setting.
+memory and shared services; none is a universal fastest setting. On a persistent
+self-hosted runner, local `GOCACHE` and `GOMODCACHE` are a separate layer from
+setup-go's archive; follow [fixed fleets](19-self-hosted-fleet.md#caches).
 
 **Gate:** preserve required `-race`, coverage, build tags, environment and package
 list; invalidate for toolchain/platform/CGO inputs; test a truly cold cache and one
@@ -162,7 +164,9 @@ API v2 minimums in the reviewed guidance include Buildx 0.21.0 and BuildKit 0.20
 also check Compose 2.33.1 when using Compose and Engine 28.0.0 when using the Docker
 driver with its containerd image store.
 Cache mounts are not exported to GHA automatically; measure an explicit solution
-before adding another action or persistent builder.
+before adding another action or persistent builder. A Docker Hub pull-through
+mirror is Hub-only and is a fixed-fleet experiment, not a general cache backend.
+See [fixed fleets](19-self-hosted-fleet.md#caches).
 
 **Gate:** cold/offline-cache correctness, same image/platform outputs, no secret
 leakage, trusted writers and cancellation safety. Do not cache credential-bearing
@@ -175,15 +179,20 @@ layers. **Fallback:** reproducible uncached build. Sources:
 **Detect:** projects/browsers, file sizes, serial suites, setup dependencies,
 web-server startup, browser installation, traces/retries and report merge.
 
-**Experiment:** profile setup separately; compare workers × shards. Default
-file-oriented sharding and `fullyParallel` distribute work differently; changing
-the latter requires tests independent within files. Share a build only when the
-serial build/transport stage reduces the required path or justified runner cost.
+**Experiment:** profile setup separately; compare workers × shards. Playwright
+recommends `workers: 1` in CI and allows more workers on a powerful self-hosted
+system; shard for wider parallelism. Do not cloud-cache browser binaries when
+restore time matches download time. On a fixed fleet, 1–2 workers per shard only
+if measured RSS fits an idle slot. See [fixed fleets](19-self-hosted-fleet.md#gradle-and-playwright).
+Default file-oriented sharding and `fullyParallel` distribute work differently;
+changing the latter requires tests independent within files. Share a build only
+when the serial build/transport stage reduces the required path or justified runner cost.
 
 **Gate:** every expected shard/report and original browser/project set, failure
 propagation, retained traces on failure, compatible report merge, no service/data
 races, and full coverage/behavioral obligations. **Fallback:** original project
-schedule. Source: [Playwright sharding](https://playwright.dev/docs/test-sharding).
+schedule. Sources: [Playwright sharding](https://playwright.dev/docs/test-sharding),
+[Playwright CI](https://playwright.dev/docs/ci).
 
 ## Nx and Turborepo remote caches
 
@@ -227,6 +236,8 @@ slim/ARM/larger/approved external runners only against actual architecture and
 capability requirements. Preserve trust, image/toolchain identity and cancellation.
 An improvement in execution can lose overall if queue/setup grows. Purchases and
 provider migrations need scoped authorization. See [platform guidance](09-platform-updates.md).
+Self-hosted slot sizing, local stores and cleanup hooks are [fixed fleets](19-self-hosted-fleet.md),
+not a reason to leave a low-RAM host in a heavy pool.
 
 ## Android and Gradle
 
@@ -239,13 +250,18 @@ separately. A KVM-dependent plan needs verified guest support; ARM alone is not 
 cache and task-output build cache. Start with existing tasks and pinned toolchain;
 compare cold and warm runs and key any reusable state on actual inputs. Cap Gradle
 workers, test forks and emulator count against peak concurrent memory. Include
-daemon startup/reuse; do not trade sustained swapping or thermal throttling for more
-workers. Keep release signing separate from PR test workers.
+daemon startup/reuse; Gradle reuses a daemon only when Java home, version and JVM
+args match, so standardize `org.gradle.jvmargs` instead of copying a heap template.
+Raise the heap only when measured GC share justifies it. Do not trade sustained
+swapping or thermal throttling for more workers. Keep release signing separate from
+PR test workers. Persistent-runner homes and LAN caches: [fixed fleets](19-self-hosted-fleet.md#gradle-and-playwright).
 
 **Gate:** same variants, ABI, tests, coverage and instrumented test obligations;
 check plugin compatibility and cold fallbacks; fail on missing reports or skipped
 emulators. Sources: [Gradle performance](https://docs.gradle.org/current/userguide/performance.html),
 [configuration cache](https://docs.gradle.org/current/userguide/configuration_cache.html),
+[Gradle daemon](https://docs.gradle.org/current/userguide/gradle_daemon.html),
+[Android build speed](https://developer.android.com/build/optimize-your-build),
 [Android emulator acceleration](https://developer.android.com/studio/run/emulator-acceleration).
 
 ## iOS and Xcode
